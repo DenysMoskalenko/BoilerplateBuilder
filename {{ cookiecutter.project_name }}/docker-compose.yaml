@@ -23,4 +23,4 @@ services:
 volumes:
   postgres_data:
     name: {{ cookiecutter.project_name.lower() }}_postgres_data
-{%- endif %} 
+{%- endif %}

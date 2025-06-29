@@ -63,13 +63,13 @@ logging.basicConfig(
 async def main() -> None:
     settings = get_settings()
     print(f'{settings.PROJECT_NAME} with database is ready...')  # noqa: T201
-    
+
     # Example database usage
     async with open_db_session() as session:
         # You can add your database operations here
         # For example, count records in the example table
         from sqlalchemy import select, func
-        
+
         result = await session.execute(select(func.count(ExampleModel.id)))
         count = result.scalar()
         print(f'Found {count} examples in database')  # noqa: T201

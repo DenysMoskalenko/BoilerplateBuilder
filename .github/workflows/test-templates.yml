@@ -13,7 +13,7 @@ jobs:
       matrix:
         project_type: [fastapi_db, fastapi_slim, cli_db, cli_slim]
         python_version: ["3.10", "3.11", "3.12"]
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -63,7 +63,7 @@ jobs:
         # Create lock file and install dependencies
         uv lock
         uv sync
-        
+
         # Set up environment file for database projects
         if [[ "${{ matrix.project_type }}" == *"db"* ]]; then
           echo "DATABASE_URL=postgresql+psycopg://test_user:test_password@localhost:5432/test_db" > .env
@@ -129,37 +129,62 @@ jobs:
           for pre_commit in yes no; do
             for github_actions in yes no; do
               echo "Testing: $project_type, pre_commit=$pre_commit, github_actions=$github_actions"
-              
+
+              project_name="TestProject"
+
               cookiecutter . --no-input \
-                project_name="Test${project_type^}" \
+                project_name="$project_name" \
                 project_type="$project_type" \
                 use_pre_commit="$pre_commit" \
                 use_github_actions="$github_actions" \
                 initialize_git="no"
-              
+
               # Verify key files exist
-              test -f "Test${project_type^}/pyproject.toml"
-              test -f "Test${project_type^}/Dockerfile"
-              test -f "Test${project_type^}/Makefile"
-              
+              if [[ ! -f "$project_name/pyproject.toml" ]]; then
+                echo "❌ pyproject.toml missing"
+                exit 1
+              fi
+
+              if [[ ! -f "$project_name/Dockerfile" ]]; then
+                echo "❌ Dockerfile missing"
+                exit 1
+              fi
+
+              if [[ ! -f "$project_name/Makefile" ]]; then
+                echo "❌ Makefile missing"
+                exit 1
+              fi
+
               # Verify conditional files
               if [[ "$project_type" == *"db"* ]]; then
-                test -f "Test${project_type^}/alembic.ini"
-                test -f "Test${project_type^}/docker-compose.yaml"
+                if [[ ! -f "$project_name/alembic.ini" ]]; then
+                  echo "❌ alembic.ini missing for database project"
+                  exit 1
+                fi
+                if [[ ! -f "$project_name/docker-compose.yaml" ]]; then
+                  echo "❌ docker-compose.yaml missing for database project"
+                  exit 1
+                fi
               fi
-              
+
               if [[ "$pre_commit" == "yes" ]]; then
-                test -f "Test${project_type^}/.pre-commit-config.yaml"
+                if [[ ! -f "$project_name/.pre-commit-config.yaml" ]]; then
+                  echo "❌ .pre-commit-config.yaml missing"
+                  exit 1
+                fi
               fi
-              
+
               if [[ "$github_actions" == "yes" ]]; then
-                test -f "Test${project_type^}/.github/workflows/ci.yml"
+                if [[ ! -f "$project_name/.github/workflows/pull_request.yml" ]]; then
+                  echo "❌ .github/workflows/pull_request.yml missing"
+                  exit 1
+                fi
               fi
-              
+
               echo "✓ $project_type generation successful"
-              rm -rf "Test${project_type^}"
+              rm -rf "$project_name"
             done
           done
         done
-        
-        echo "All template combinations generated successfully!" 
+
+        echo "All template combinations generated successfully!"
