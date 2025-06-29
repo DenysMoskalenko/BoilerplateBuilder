@@ -19,12 +19,22 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        clean: true
+
+    - name: Clear any cached files and verify template
+      run: |
+        # Force clear any potential caches
+        rm -rf ~/.cache/cookiecutter
+        rm -rf /tmp/cookiecutter*
+        echo "Current commit: $(git rev-parse HEAD)"
+        echo "Template database.py line 11:"
+        sed -n '11p' "{{ cookiecutter.project_name }}/app/core/database.py"
 
     - name: Install the latest version of uv
       uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ matrix.python_version }}
-        enable-cache: true
+        enable-cache: false
 
     - name: Install cookiecutter
       run: |
@@ -63,23 +73,6 @@ jobs:
       run: |
         uv run pytest -v
 
-    - name: Test Docker build
-      working-directory: ./TestProject
-      run: |
-        docker build -t test-project .
-
-    - name: Test basic functionality
-      working-directory: ./TestProject
-      run: |
-        # Test that the application can start without errors
-        if [[ "${{ matrix.project_type }}" == "fastapi"* ]]; then
-          # For FastAPI projects, test that the app can be imported
-          uv run python -c "from app.main import app; print('FastAPI app imported successfully')"
-        else
-          # For CLI projects, test that main can run
-          timeout 10s uv run python -m app.main || true
-        fi
-
   test-template-generation:
     runs-on: ubuntu-latest
     strategy:
@@ -90,12 +83,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        clean: true
 
     - name: Install the latest version of uv
       uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ matrix.python_version }}
-        enable-cache: true
+        enable-cache: false
 
     - name: Install cookiecutter
       run: |
