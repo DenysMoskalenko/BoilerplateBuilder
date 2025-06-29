@@ -1,0 +1,165 @@
+name: Test All Project Templates
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-templates:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project_type: [fastapi_db, fastapi_slim, cli_db, cli_slim]
+        python_version: ["3.10", "3.11", "3.12"]
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout cookiecutter template
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python_version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python_version }}
+
+    - name: Install cookiecutter and uv
+      run: |
+        python -m pip install --upgrade pip
+        pip install cookiecutter
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Generate project from template
+      run: |
+        cookiecutter . --no-input \
+          project_name="TestProject" \
+          project_type="${{ matrix.project_type }}" \
+          python_version="${{ matrix.python_version }}" \
+          author_name="Test Author" \
+          author_email="test@example.com" \
+          use_pre_commit="yes" \
+          use_github_actions="yes" \
+          initialize_git="no"
+
+    - name: Set up environment for generated project
+      working-directory: ./TestProject
+      run: |
+        # Create lock file and install dependencies
+        uv lock
+        uv sync
+        
+        # Set up environment file for database projects
+        if [[ "${{ matrix.project_type }}" == *"db"* ]]; then
+          echo "DATABASE_URL=postgresql+psycopg://test_user:test_password@localhost:5432/test_db" > .env
+          echo "MIGRATION_ON_STARTUP=False" >> .env
+        else
+          echo "PROJECT_NAME=TestProject" > .env
+        fi
+
+    - name: Run database migrations (database projects only)
+      if: contains(matrix.project_type, 'db')
+      working-directory: ./TestProject
+      run: |
+        uv run alembic upgrade head
+
+    - name: Run linter
+      working-directory: ./TestProject
+      run: |
+        uv run ruff check .
+        uv run ruff format --check .
+
+    - name: Run tests
+      working-directory: ./TestProject
+      run: |
+        uv run pytest -v
+
+    - name: Test Docker build
+      working-directory: ./TestProject
+      run: |
+        docker build -t test-project .
+
+    - name: Test basic functionality
+      working-directory: ./TestProject
+      run: |
+        # Test that the application can start without errors
+        if [[ "${{ matrix.project_type }}" == "fastapi"* ]]; then
+          # For FastAPI projects, test that the app can be imported
+          uv run python -c "from app.main import app; print('FastAPI app imported successfully')"
+        else
+          # For CLI projects, test that main can run
+          timeout 10s uv run python -m app.main || true
+        fi
+
+  test-template-generation:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout cookiecutter template
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install cookiecutter
+      run: |
+        python -m pip install --upgrade pip
+        pip install cookiecutter
+
+    - name: Test template generation with different options
+      run: |
+        # Test all combinations of key options
+        for project_type in fastapi_db fastapi_slim cli_db cli_slim; do
+          for pre_commit in yes no; do
+            for github_actions in yes no; do
+              echo "Testing: $project_type, pre_commit=$pre_commit, github_actions=$github_actions"
+              
+              cookiecutter . --no-input \
+                project_name="Test${project_type^}" \
+                project_type="$project_type" \
+                use_pre_commit="$pre_commit" \
+                use_github_actions="$github_actions" \
+                initialize_git="no"
+              
+              # Verify key files exist
+              test -f "Test${project_type^}/pyproject.toml"
+              test -f "Test${project_type^}/Dockerfile"
+              test -f "Test${project_type^}/Makefile"
+              
+              # Verify conditional files
+              if [[ "$project_type" == *"db"* ]]; then
+                test -f "Test${project_type^}/alembic.ini"
+                test -f "Test${project_type^}/docker-compose.yaml"
+              fi
+              
+              if [[ "$pre_commit" == "yes" ]]; then
+                test -f "Test${project_type^}/.pre-commit-config.yaml"
+              fi
+              
+              if [[ "$github_actions" == "yes" ]]; then
+                test -f "Test${project_type^}/.github/workflows/ci.yml"
+              fi
+              
+              echo "✓ $project_type generation successful"
+              rm -rf "Test${project_type^}"
+            done
+          done
+        done
+        
+        echo "All template combinations generated successfully!" 

@@ -7,14 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 {%- if cookiecutter.project_type == "fastapi_db" %}
 from app.api.examples.routes import router as examples_router
 from app.api.health_checks.routes import router as health_checks_router
+from app.core.config import get_settings
+from app.core.exception_handlers import include_exception_handlers
+from app.core.lifespan import lifespan
 {%- else %}
 from app.api.health_checks.routes import router as health_checks_router
-{%- endif %}
 from app.core.config import get_settings
-{%- if cookiecutter.project_type == "fastapi_db" %}
-from app.core.exception_handlers import include_exception_handlers
-{%- endif %}
 from app.core.lifespan import lifespan
+{%- endif %}
 
 logging.basicConfig(
     level=logging.INFO,

@@ -2,25 +2,6 @@
 version: '3.8'
 
 services:
-{%- if cookiecutter.project_type == "fastapi_db" %}
-  {{ cookiecutter.project_name.lower() }}-web:
-    container_name: {{ cookiecutter.project_name.lower() }}_web
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - APP_NAME={{ cookiecutter.project_name }}
-      - DATABASE_URL=postgresql+asyncpg://{{ cookiecutter.project_name.lower() }}_user:{{ cookiecutter.project_name.lower() }}_password@{{ cookiecutter.project_name.lower() }}-db:5432/{{ cookiecutter.project_name.lower() }}_db
-    volumes:
-      - ./app:/app/app
-    depends_on:
-      {{ cookiecutter.project_name.lower() }}-db:
-        condition: service_healthy
-    restart: unless-stopped
-
-{%- endif %}
   {{ cookiecutter.project_name.lower() }}-db:
     container_name: {{ cookiecutter.project_name.lower() }}_db
     image: postgres:15-alpine
