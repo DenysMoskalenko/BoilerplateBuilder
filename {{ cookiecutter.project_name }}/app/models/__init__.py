@@ -1,4 +1,4 @@
-{%- if cookiecutter.project_type == "fastapi_db" %}
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
 from pathlib import Path
 import pkgutil
 
