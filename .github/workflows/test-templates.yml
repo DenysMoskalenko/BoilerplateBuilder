@@ -14,24 +14,11 @@ jobs:
         project_type: [fastapi_db, fastapi_slim, cli_db, cli_slim]
         python_version: ["3.11", "3.12"]
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
     - name: Checkout cookiecutter template
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Install the latest version of uv
       uses: astral-sh/setup-uv@v5
@@ -64,8 +51,6 @@ jobs:
 
         # Set up basic environment file
         echo "PROJECT_NAME=TestProject" > .env
-
-
 
     - name: Run linter
       working-directory: ./TestProject
@@ -103,6 +88,8 @@ jobs:
     steps:
     - name: Checkout cookiecutter template
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Install the latest version of uv
       uses: astral-sh/setup-uv@v5
