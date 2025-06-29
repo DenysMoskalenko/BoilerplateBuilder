@@ -1,0 +1,29 @@
+{
+    "project_name": "MyProject",
+    "project_description": "A Python project",
+    "author_name": "Your Name",
+    "author_email": "your.email@example.com",
+    "project_type": [
+        "fastapi_db",
+        "fastapi_slim",
+        "cli_slim",
+        "cli_db"
+    ],
+    "python_version": [
+        "3.12",
+        "3.11",
+        "3.10"
+    ],
+    "use_pre_commit": [
+        "yes",
+        "no"
+    ],
+    "use_github_actions": [
+        "yes",
+        "no"
+    ],
+    "initialize_git": [
+        "no",
+        "yes"
+    ]
+}

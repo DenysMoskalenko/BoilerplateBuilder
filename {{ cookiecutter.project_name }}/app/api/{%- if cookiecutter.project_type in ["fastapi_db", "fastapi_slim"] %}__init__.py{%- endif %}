@@ -1,0 +1,10 @@
+"""API endpoints for {{ cookiecutter.project_name }}."""
+
+from fastapi import APIRouter
+
+# Create main API router
+router = APIRouter()
+
+# Import and include sub-routers here
+# from app.api.users import router as users_router
+# router.include_router(users_router, prefix="/users", tags=["users"])

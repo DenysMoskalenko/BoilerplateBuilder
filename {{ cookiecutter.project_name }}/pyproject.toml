@@ -1,0 +1,90 @@
+[project]
+name = "{{ cookiecutter.project_name.lower() }}"
+version = "0.1.0"
+description = "{{ cookiecutter.project_description }}"
+authors = [
+    "{{ cookiecutter.author_name }} <{{ cookiecutter.author_email }}>",
+]
+readme = "README.md"
+requires-python = ">={{ cookiecutter.python_version }}"
+
+dependencies = [
+{%- if cookiecutter.project_type == "fastapi_db" %}
+    "alembic>=1.16.2",
+    "fastapi>=0.115.14",
+    "psycopg[binary]>=3.2.9",
+    "pydantic-settings>=2.10.1",
+    "pydantic[email]>=2.11.7",
+    "sqlalchemy>=2.0.41",
+    "uvicorn[standard]>=0.34.3",
+{%- elif cookiecutter.project_type == "fastapi_slim" %}
+    "fastapi>=0.115.14",
+    "pydantic-settings>=2.10.1",
+    "pydantic[email]>=2.11.7",
+    "uvicorn[standard]>=0.34.3",
+{%- elif cookiecutter.project_type == "cli_db" %}
+    "alembic>=1.16.2",
+    "psycopg[binary]>=3.2.9",
+    "pydantic-settings>=2.10.1",
+    "pydantic[email]>=2.11.7",
+    "sqlalchemy>=2.0.41",
+{%- else %}
+    "pydantic-settings>=2.10.1",
+    "pydantic[email]>=2.11.7",
+{%- endif %}
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.1",
+    "pre-commit>=4.2.0",
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+    "httpx>=0.28.1",
+{%- endif %}
+    "polyfactory>=2.21.0",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+    "testcontainers[postgres]>=4.10.0",
+{%- endif %}
+]
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+#filterwarnings = [
+#    "ignore::DeprecationWarning:passlib",
+#    "ignore::DeprecationWarning:jose"
+#]
+
+[tool.ruff]
+line-length = 120
+target-version = "py{{ cookiecutter.python_version.replace('.', '') }}"
+exclude = [
+    #    Include ignore folders if needed
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+    "E", # Errors
+    "F", # Pyflakes
+    "I", # isort
+    "T20", # flake8-print
+]
+pydocstyle.convention = 'google'
+
+[tool.ruff.lint.isort]
+known-local-folder = ["tests", "app", "scripts"]
+split-on-trailing-comma = true
+combine-as-imports = true
+case-sensitive = false
+detect-same-package = true
+order-by-type = false  # Sorting of all imported objects (functions, classes, etc.) regardless of their type
+force-sort-within-sections = true  # Don't sort straight-style imports before from-style imports.
