@@ -65,6 +65,7 @@ jobs:
     - name: Run linter
       working-directory: ./TestProject
       run: |
+        uv run --active ruff format .
         uv run --active ruff check --fix .
         uv run --active ruff format --check .
 
