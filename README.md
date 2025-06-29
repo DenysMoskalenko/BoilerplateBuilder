@@ -20,7 +20,7 @@ pip install cookiecutter
 uv add cookiecutter
 
 # Generate a new project
-cookiecutter https://github.com/your-username/BoilerplateBuilder
+cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 ```
 
 ## 📋 Project Types
@@ -106,7 +106,7 @@ This template supports **4 different project types**:
 ### Interactive Generation
 
 ```bash
-cookiecutter https://github.com/your-username/BoilerplateBuilder
+cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 ```
 
 You'll be prompted for:
@@ -124,7 +124,7 @@ You'll be prompted for:
 ### Non-Interactive Generation
 
 ```bash
-cookiecutter https://github.com/your-username/BoilerplateBuilder \
+cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder \
   --no-input \
   project_name="MyAwesomeAPI" \
   project_type="fastapi_db" \
