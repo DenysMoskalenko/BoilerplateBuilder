@@ -3,13 +3,12 @@
 
 ### Locally:
 
-1. Create a .env file and fill it with appropriate values, check dist.env about the needed attributes.
-2. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
-3. Create virtual environment: `uv venv --python 3.12`
-4. Activate environment `source .venv/bin/activate`
-5. Install project dependencies: `uv sync`
-6. Copy `dist.env` file into `.env` file and provide correct env variables
-7. Run app: `make run`
+1. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
+2. Create virtual environment: `uv venv --python 3.12`
+3. Activate environment `source .venv/bin/activate`
+4. Install project dependencies: `uv sync`
+5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
+6. Run app: `make run`
 
 ### Before PR:
 
@@ -35,13 +34,12 @@ Before making any commits—ensure you are using correct work profile.
 
 ### Locally:
 
-1. Create a .env file and fill it with appropriate values, check dist.env about the needed attributes.
-2. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
-3. Create virtual environment: `uv venv --python 3.12`
-4. Activate environment `source .venv/bin/activate`
-5. Install project dependencies: `uv sync`
-6. Copy `dist.env` file into `.env` file and provide correct env variables
-7. Run app: `make run`
+1. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
+2. Create virtual environment: `uv venv --python 3.12`
+3. Activate environment `source .venv/bin/activate`
+4. Install project dependencies: `uv sync`
+5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
+6. Run app: `make run`
 
 ### Before PR:
 
@@ -67,13 +65,12 @@ Before making any commits—ensure you are using correct work profile.
 
 ### Locally:
 
-1. Create a .env file and fill it with appropriate values, check dist.env about the needed attributes.
-2. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
-3. Create virtual environment: `uv venv --python 3.12`
-4. Activate environment `source .venv/bin/activate`
-5. Install project dependencies: `uv sync`
-6. Copy `dist.env` file into `.env` file and provide correct env variables
-7. Run app: `make run`
+1. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
+2. Create virtual environment: `uv venv --python 3.12`
+3. Activate environment `source .venv/bin/activate`
+4. Install project dependencies: `uv sync`
+5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
+6. Run app: `make run`
 
 ### Before PR:
 

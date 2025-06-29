@@ -146,9 +146,7 @@ cd your-project-name
 # Install dependencies (done automatically during generation)
 uv sync
 
-# Copy environment file and configure
-cp .env.example .env
-# Edit .env with your settings
+# Edit .env with your real values if needed
 ```
 
 ### 3. Database projects only
