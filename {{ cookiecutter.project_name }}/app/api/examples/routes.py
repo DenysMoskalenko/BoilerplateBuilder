@@ -38,4 +38,4 @@ async def change_example(
 @router.delete('/examples/{example_id}', response_class=Response, status_code=204)
 async def delete_example(example_id: int, service: Annotated[ExampleService, Depends()]) -> None:
     await service.delete_example_by_id(example_id)
-{%- endif %} 
+{%- endif %}

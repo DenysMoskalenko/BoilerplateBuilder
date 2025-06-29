@@ -49,4 +49,4 @@ docker-compose.yaml
 
 # Misc
 *.log
-logs/ 
+logs/

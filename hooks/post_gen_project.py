@@ -163,7 +163,7 @@ def install_dependencies():
         # First create the lock file
         subprocess.run(["uv", "lock"], check=True)
         print("✓ Created uv.lock file")
-        
+
         # Then sync dependencies
         subprocess.run(["uv", "sync"], check=True)
         print("✓ Dependencies installed successfully!")
@@ -269,7 +269,7 @@ def display_success_message():
     print("\n" + "="*60)
     print(f"🎉 Project {project_name} created successfully!")
     print("="*60)
-    
+
     print(f"\n📁 Project type: {project_type}")
     print(f"   cd {project_name}")
 
@@ -288,7 +288,7 @@ def display_success_message():
     print("   - make test          # Run tests")
     print("   - make test-coverage # Run tests with coverage report")
     print("   - make run           # Run the application")
-    
+
     if project_type in ["fastapi_db", "cli_db"]:
         print("\n🗄️  Database commands:")
         print("   - make up-dependencies   # Start PostgreSQL container")
@@ -315,7 +315,7 @@ def display_success_message():
     print("   - Code is formatted with ruff")
     if project_type in ["fastapi_db", "cli_db"]:
         print("   - Database migrations use Alembic")
-    
+
     print("\n" + "="*60)
 
 

@@ -43,4 +43,4 @@ ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 #ENTRYPOINT ["gunicorn", "app.main:app", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--access-logfile", "-"]
 {%- else %}
 ENTRYPOINT ["python", "-m", "app.main"]
-{%- endif %} 
+{%- endif %}

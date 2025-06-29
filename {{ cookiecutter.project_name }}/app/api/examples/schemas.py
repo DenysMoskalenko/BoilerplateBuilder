@@ -36,4 +36,4 @@ class Example(BaseModel):
     birthday: date | None = None
 
     model_config = ConfigDict(from_attributes=True)
-{%- endif %} 
+{%- endif %}

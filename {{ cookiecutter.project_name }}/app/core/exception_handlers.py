@@ -16,4 +16,4 @@ def not_found_exception_handler(request: Request, exc: NotFoundError) -> None:
 
 def conflict_exception_handler(request: Request, exc: AlreadyExistError) -> None:
     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc) or 'Conflict')
-{%- endif %} 
+{%- endif %}

@@ -66,4 +66,4 @@ class ExampleService:
 
     async def _validate_example(self, creation: ExampleCreate | ExampleUpdate) -> None:
         """Here we just need to check if example is unique and other stuff like that"""
-{%- endif %} 
+{%- endif %}

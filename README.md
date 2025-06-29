@@ -166,7 +166,7 @@ make migrate
 make run
 # Visit http://localhost:8000/docs
 
-# CLI projects  
+# CLI projects
 make run
 ```
 
@@ -201,7 +201,7 @@ make migrate          # Apply migrations
 
 ```bash
 make migration MSG="add users table"  # Create new migration
-make migrate                         # Apply all migrations  
+make migrate                         # Apply all migrations
 make upgrade                         # Apply next migration
 make downgrade                       # Rollback last migration
 ```
