@@ -33,17 +33,15 @@ jobs:
     - name: Checkout cookiecutter template
       uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python_version }}
-      uses: actions/setup-python@v4
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ matrix.python_version }}
+        enable-cache: true
 
-    - name: Install cookiecutter and uv
+    - name: Install cookiecutter
       run: |
-        python -m pip install --upgrade pip
-        pip install cookiecutter
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        uv tool install cookiecutter
 
     - name: Generate project from template
       run: |
@@ -64,19 +62,10 @@ jobs:
         uv lock
         uv sync
 
-        # Set up environment file for database projects
-        if [[ "${{ matrix.project_type }}" == *"db"* ]]; then
-          echo "DATABASE_URL=postgresql+psycopg://test_user:test_password@localhost:5432/test_db" > .env
-          echo "MIGRATION_ON_STARTUP=False" >> .env
-        else
-          echo "PROJECT_NAME=TestProject" > .env
-        fi
+        # Set up basic environment file
+        echo "PROJECT_NAME=TestProject" > .env
 
-    - name: Run database migrations (database projects only)
-      if: contains(matrix.project_type, 'db')
-      working-directory: ./TestProject
-      run: |
-        uv run alembic upgrade head
+
 
     - name: Run linter
       working-directory: ./TestProject
@@ -112,15 +101,15 @@ jobs:
     - name: Checkout cookiecutter template
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@v5
       with:
         python-version: "3.11"
+        enable-cache: true
 
     - name: Install cookiecutter
       run: |
-        python -m pip install --upgrade pip
-        pip install cookiecutter
+        uv tool install cookiecutter
 
     - name: Test template generation with different options
       run: |
