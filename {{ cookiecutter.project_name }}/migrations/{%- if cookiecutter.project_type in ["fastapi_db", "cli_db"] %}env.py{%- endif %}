@@ -1,4 +1,3 @@
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
 from logging.config import fileConfig
 import os
 
@@ -92,4 +91,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-{%- endif %}
