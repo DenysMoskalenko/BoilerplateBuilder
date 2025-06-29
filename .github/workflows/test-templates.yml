@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         project_type: [fastapi_db, fastapi_slim, cli_db, cli_slim]
-        python_version: ["3.10", "3.11", "3.12"]
+        python_version: ["3.11", "3.12"]
 
     services:
       postgres:
@@ -97,6 +97,9 @@ jobs:
 
   test-template-generation:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python_version: ["3.11", "3.12"]
     steps:
     - name: Checkout cookiecutter template
       uses: actions/checkout@v4
@@ -104,7 +107,7 @@ jobs:
     - name: Install the latest version of uv
       uses: astral-sh/setup-uv@v5
       with:
-        python-version: "3.11"
+        python-version: ${{ matrix.python_version }}
         enable-cache: true
 
     - name: Install cookiecutter
@@ -124,6 +127,7 @@ jobs:
               cookiecutter . --no-input \
                 project_name="$project_name" \
                 project_type="$project_type" \
+                python_version="${{ matrix.python_version }}" \
                 use_pre_commit="$pre_commit" \
                 use_github_actions="$github_actions" \
                 initialize_git="no"
