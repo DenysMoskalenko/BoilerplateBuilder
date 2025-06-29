@@ -241,7 +241,7 @@ def run_linter_and_formatter():
     try:
         print("Running linter and formatter...")
         # Run ruff format to format the code
-        subprocess.run(["uv", "run", "ruff", "format", "."], check=True, capture_output=True)
+        subprocess.run(["uv", "run", "ruff", "format", ".", "--fix"], check=True, capture_output=True)
         print("✓ Code formatted successfully")
 
         # Run ruff check to lint the code
