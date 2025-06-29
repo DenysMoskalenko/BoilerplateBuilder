@@ -168,13 +168,15 @@ def install_dependencies():
         subprocess.run(["uv", "sync"], check=True)
         print("✓ Dependencies installed successfully!")
 
-        # Install pre-commit hooks if enabled
-        if Path(".pre-commit-config.yaml").exists():
+        # Install pre-commit hooks if enabled and git is initialized
+        if Path(".pre-commit-config.yaml").exists() and Path(".git").exists():
             try:
                 subprocess.run(["uv", "run", "pre-commit", "install"], check=True, capture_output=True)
                 print("✓ Pre-commit hooks installed")
             except subprocess.CalledProcessError:
                 print("⚠ Failed to install pre-commit hooks")
+        elif Path(".pre-commit-config.yaml").exists() and not Path(".git").exists():
+            print("⚠ Skipping pre-commit hooks installation (git not initialized)")
     except FileNotFoundError:
         print("⚠ uv not found. Please install uv and run 'uv lock && uv sync' to install dependencies")
     except subprocess.CalledProcessError as e:
@@ -241,11 +243,11 @@ def run_linter_and_formatter():
     try:
         print("Running linter and formatter...")
         # Run ruff format to format the code
-        subprocess.run(["uv", "run", "ruff", "format", ".", "--fix"], check=True, capture_output=True)
+        subprocess.run(["uv", "run", "ruff", "format", "."], check=True, capture_output=True)
         print("✓ Code formatted successfully")
 
         # Run ruff check to lint the code
-        result = subprocess.run(["uv", "run", "ruff", "check", "."], capture_output=True, text=True)
+        result = subprocess.run(["uv", "run", "ruff", "check", ".", "--fix"], capture_output=True, text=True)
         if result.returncode == 0:
             print("✓ Linting passed successfully")
         else:
