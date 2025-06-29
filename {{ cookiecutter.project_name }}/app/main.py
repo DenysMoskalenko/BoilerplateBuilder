@@ -5,12 +5,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 {%- if cookiecutter.project_type == "fastapi_db" %}
+
 from app.api.examples.routes import router as examples_router
 from app.api.health_checks.routes import router as health_checks_router
 from app.core.config import get_settings
 from app.core.exception_handlers import include_exception_handlers
 from app.core.lifespan import lifespan
 {%- else %}
+
 from app.api.health_checks.routes import router as health_checks_router
 from app.core.config import get_settings
 from app.core.lifespan import lifespan
@@ -50,6 +52,8 @@ app = create_app()
 import asyncio
 import logging
 
+from sqlalchemy import func, select
+
 from app.core.config import get_settings
 from app.core.database import open_db_session
 from app.models.example import ExampleModel
@@ -68,8 +72,6 @@ async def main() -> None:
     async with open_db_session() as session:
         # You can add your database operations here
         # For example, count records in the example table
-        from sqlalchemy import select, func
-
         result = await session.execute(select(func.count(ExampleModel.id)))
         count = result.scalar()
         print(f'Found {count} examples in database')  # noqa: T201

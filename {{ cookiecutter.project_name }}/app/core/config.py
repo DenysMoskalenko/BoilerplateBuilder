@@ -1,9 +1,11 @@
 from functools import lru_cache
 
 {%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 {%- else %}
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 {%- endif %}
 
