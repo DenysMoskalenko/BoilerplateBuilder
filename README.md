@@ -7,7 +7,7 @@ support, Docker, testing, and CI/CD setup.
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - [uv](https://github.com/astral-sh/uv)
 - [cookiecutter](https://github.com/cookiecutter/cookiecutter)
 
@@ -116,7 +116,7 @@ You'll be prompted for:
 - **Author name**: Your name
 - **Author email**: Your email
 - **Project type**: Choose from `fastapi_db`, `fastapi_slim`, `cli_db`, `cli_slim`
-- **Python version**: 3.10, 3.11, or 3.12
+- **Python version**: 3.11 or 3.12
 - **Pre-commit hooks**: Enable/disable pre-commit
 - **GitHub Actions**: Enable/disable CI/CD
 - **Git initialization**: Auto-initialize git repo
