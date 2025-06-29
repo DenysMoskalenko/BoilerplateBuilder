@@ -63,7 +63,7 @@ asyncio_default_fixture_loop_scope = "session"
 line-length = 120
 target-version = "py{{ cookiecutter.python_version.replace('.', '') }}"
 exclude = [
-    .venv
+    ".venv",
     #    Include ignore folders if needed
 ]
 
