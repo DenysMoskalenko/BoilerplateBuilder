@@ -1,0 +1,88 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Python Development Tools & Setup
+
+## 7. UV Package Manager
+- **Use UV exclusively** - never use pip directly
+- Add production dependencies: `uv add package-name`
+- Add development dependencies: `uv add --group dev package-name`
+- Remove unused dependencies: `uv remove package-name`
+- All configuration in `pyproject.toml`
+
+## 8. Ruff as Linter
+- **Use Ruff** as the primary linter
+- Run after completing any task: `uv run ruff check --fix . && uv run ruff format .`
+- The `--fix` flag automatically fixes safe issues
+- Fix all remaining linting issues before considering work complete
+
+## 9. Pytest for Testing
+- **Use pytest** as testing framework
+- Tests are mandatory - even if confident the code works
+- Configure in `pyproject.toml`
+
+## 10. Run Linter When Done
+- Always run before considering task complete:
+  ```bash
+  uv run ruff check --fix . && uv run ruff format .
+  ```
+
+## 11. Run Tests When Done
+- Always run tests to prove it works:
+  ```bash
+  uv run pytest
+  ```
+- Even if sure it works - you MUST run tests
+
+## 12. Remove Unused Dependencies
+- When removing features, remove their dependencies
+- Keep dependencies clean and minimal
+- Use `uv remove package-name`
+
+## 13. Separate Dev/Prod Dependencies
+- **Production dependencies** in `[project]`:
+  - Runtime libraries (FastAPI, SQLAlchemy, Pydantic)
+  - Database drivers, API clients
+  - Anything imported by application code
+
+- **Development dependencies** in `[dependency-groups.dev]`:
+  - Testing tools (pytest, pytest-cov)
+  - Linters (ruff, mypy)
+  - Test utilities (polyfactory, testcontainers)
+
+## Example: Complete pyproject.toml
+```toml
+[project]
+name = "my-project"
+version = "0.1.0"
+dependencies = [
+    # Only production runtime dependencies
+    "fastapi>=0.115.0",
+    "pydantic[email]>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg[binary]>=3.0.0",
+]
+
+[dependency-groups]
+dev = [
+    # Development and testing tools only
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-timeout>=2.2.0",
+    "ruff>=0.1.0",
+    "httpx>=0.27.0",  # For API testing,
+    "polyfactory>=2.0.0",
+    "testcontainers[postgres]>=4.0.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+```

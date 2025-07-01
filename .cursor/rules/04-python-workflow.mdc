@@ -1,0 +1,144 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Python Development Workflow
+
+## 17. Add Only Task-Related Code
+- **Only add code related to current task**
+- Don't add unrelated improvements
+- If task is "Add test" - don't add pre-commit hooks
+- Maintain focus on specific requirement
+
+## 18. Don't Break Existing Code
+- Ensure new code doesn't break existing functionality
+- Test integration with existing features
+- Preserve existing logic unless explicitly changing it
+- Run full test suite before considering done
+
+## Development Workflow Checklist
+
+Before starting ANY task:
+1. ✓ Understand the specific requirement
+2. ✓ Check existing code and tests
+3. ✓ Plan changes without breaking existing functionality
+
+While developing:
+1. ✓ Use Python 3.12+ features where applicable
+2. ✓ Type all functions, parameters, returns
+3. ✓ Use Pydantic for data models
+4. ✓ Follow dependency injection patterns
+5. ✓ Add only task-related code
+
+Before completing ANY task:
+1. ✓ Dependencies properly separated (prod/dev)
+2. ✓ Unused dependencies removed
+3. ✓ Run linter: `uv run ruff check --fix . && uv run ruff format .`
+4. ✓ Run tests: `uv run pytest`
+5. ✓ Verify existing functionality not broken
+
+## Quick Command Reference
+```bash
+# Add production dependency
+uv add fastapi
+
+# Add dev dependency
+uv add --group dev pytest-asyncio
+
+# Remove dependency
+uv remove old-package
+
+# Run linter (with auto-fix)
+uv run ruff check --fix . && uv run ruff format .
+
+# Run tests
+uv run pytest
+
+# Run specific test
+uv run pytest tests/test_api.py -v
+
+# Check what would be committed
+git status
+git diff --staged
+```
+
+## Common Patterns to Avoid
+```python
+# ❌ BAD: Using Optional instead of union
+from typing import Optional
+birthday: Optional[date] = None
+
+# ✓ GOOD: Modern union syntax
+birthday: date | None = None
+
+# ❌ BAD: Untyped service dependencies
+class ExampleService:
+    def __init__(self, session):
+        self._session = session
+
+# ✓ GOOD: Properly typed with Annotated
+from typing import Annotated
+class ExampleService:
+    def __init__(self, session: Annotated[AsyncSession, Depends(get_session)]):
+        self._session = session
+
+# ❌ BAD: Raw dict without schema
+config_data = {"timeout": 30, "retries": 3, "debug": True}
+
+# ✓ GOOD: Pydantic model for configuration
+class APIConfig(BaseModel):
+    timeout: int = Field(gt=0, le=300)
+    retries: int = Field(ge=0, le=10)
+    debug: bool = False
+    base_url: str = "https://api.example.com"
+
+    @field_validator('timeout')
+    def validate_timeout(cls, timeout: int) -> int:
+        if timeout < 5:
+            raise ValueError('Timeout must be at least 5 seconds')
+        return timeout
+
+# ❌ BAD: No error handling, returning raw dict
+async def fetch_user_data(user_id: int) -> dict:
+    response = await client.get(f"/users/{user_id}")
+    return response.json()  # Raw dict without schema
+
+# ✓ GOOD: Proper error handling with timeout
+async def fetch_user_data(self, user_id: int) -> UserData:
+    try:
+        response = await self._client.get(
+            f"/users/{user_id}",
+            timeout=30.0
+        )
+        response.raise_for_status()
+    except httpx.TimeoutException:
+        raise ServiceUnavailableError("User service timeout")
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise NotFoundError(f"User(id={user_id}) not found")
+        raise
+
+    return UserData.model_validate(response.json())
+
+# ❌ BAD: Mixed dependencies in pyproject.toml
+dependencies = [
+    "fastapi>=0.115.0",
+    "pytest>=8.0.0",  # Should be in dev
+    "sqlalchemy>=2.0.0",
+]
+
+# ✓ GOOD: Separated dependencies
+[project]
+dependencies = [
+    "fastapi>=0.115.0",
+    "sqlalchemy>=2.0.0",
+    "pydantic-settings>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.1.0",
+]
+```

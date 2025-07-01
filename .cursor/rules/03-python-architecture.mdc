@@ -1,0 +1,147 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Python Architecture & Data Modeling
+
+## 14. Pydantic Models Everywhere
+- **Pydantic models** - preferred for ALL data objects
+- Use for API schemas, configs, any structured data
+- TypedDict only when Pydantic is overkill
+- **Never use untyped dicts** - always define schemas
+
+## 15. Pydantic Settings for Environment
+- Use **pydantic-settings** for all configuration
+- Store environment variables in `.env` files
+- Create Settings classes for type-safe config access
+
+## 16. Dependency Injection
+- Use Dependency Injection for OOP code
+- Inject dependencies through constructors or FastAPI's Depends
+- Use `Annotated[Type, Depends()]` pattern for FastAPI
+- Enables better testing and loose coupling
+
+## Example: Complete Architecture Pattern
+```python
+from typing import Annotated
+from datetime import date, datetime, UTC
+
+from fastapi import APIRouter, Depends, Response
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import delete, insert, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_session
+from app.core.exceptions import AlreadyExistError, NotFoundError
+
+# Environment configuration (Rule 10)
+class Settings(BaseSettings):
+    """Type-safe environment configuration."""
+    database_url: str
+    api_key: str
+    redis_url: str | None = None
+    debug: bool = False
+
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        frozen=True,
+        env_file='.env',
+    )
+
+# Data models (Rule 9)
+class OrderCreate(BaseModel):
+    product_id: int
+    quantity: int = Field(gt=0, le=100)
+    customer_email: EmailStr
+    notes: str | None = Field(None, max_length=500)
+
+    @field_validator('quantity')
+    def validate_quantity(cls, quantity: int) -> int:
+        if quantity > 50:
+            # Business rule: large orders need approval
+            raise ValueError('Orders over 50 items require manual approval')
+        return quantity
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'product_id': 123,
+                'quantity': 5,
+                'customer_email': 'customer@example.com',
+                'notes': 'Please ship ASAP'
+            }
+        }
+    )
+
+class Order(BaseModel):
+    id: int
+    product_id: int
+    quantity: int
+    customer_email: EmailStr
+    notes: str | None
+    status: Literal["pending", "success", "failed"]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Service with Dependency Injection (Rule 12)
+class OrderService:
+    """Service layer with injected database session."""
+
+    def __init__(self, session: Annotated[AsyncSession, Depends(get_session)]):
+        self._session = session
+
+    async def get_order(self, order_id: int) -> Order:
+        query = select(OrderModel).filter(OrderModel.id == order_id)
+
+        order = await self._session.scalar(query)
+        if order is None:
+            raise NotFoundError(f'Order(id={order_id}) not found')
+        return Order.model_validate(order)
+
+    async def create_order(self, data: OrderCreate) -> Order:
+        async with self._session.begin_nested():
+            # Validate product exists and has stock
+            await self._validate_product_availability(data.product_id, data.quantity)
+
+            query = insert(OrderModel).values(
+                product_id=data.product_id,
+                quantity=data.quantity,
+                customer_email=data.customer_email,
+                notes=data.notes,
+                status="pending"
+            ).returning(OrderModel)
+
+            order = await self._session.scalar(query)
+            await self._send_order_confirmation(order)
+
+        return Order.model_validate(order)
+
+    async def _validate_product_availability(self, product_id: int, quantity: int) -> None:
+        """Check if product exists and has sufficient stock."""
+        # Implementation
+        pass
+
+    async def _send_order_confirmation(self, order: OrderModel) -> None:
+        """Send email confirmation to customer."""
+        # Implementation
+        pass
+
+# FastAPI Router with dependency injection
+router = APIRouter(tags=['Orders'])
+
+@router.post('/orders', status_code=201)
+async def create_order(order_data: OrderCreate, service: Annotated[OrderService, Depends()]) -> Order:
+    return await service.create_order(order_data)
+
+
+@router.get('/orders/{order_id}')
+async def get_order(order_id: int, service: Annotated[OrderService, Depends()]) -> Order:
+    return await service.get_order(order_id)
+
+
+@router.patch('/orders/{order_id}/status')
+async def update_order_status(order_id: int, status: str, service: Annotated[OrderService, Depends()]) -> Order:
+    return await service.update_status(order_id, status)
