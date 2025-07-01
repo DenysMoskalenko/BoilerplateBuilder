@@ -8,6 +8,16 @@ import sys
 from pathlib import Path
 
 
+def remove_cursor_rules():
+    """Remove .cursor directory if not requested."""
+    add_cursor_rules = "{{ cookiecutter.add_cursor_rules }}"
+    if add_cursor_rules.lower() != "yes":
+        cursor_path = Path.cwd() / ".cursor"
+        if cursor_path.exists():
+            shutil.rmtree(cursor_path)
+            print("Removed .cursor directory (Cursor rules not requested)")
+
+
 def remove_empty_files():
     """Remove files that were conditionally empty."""
     project_root = Path.cwd()
@@ -322,6 +332,9 @@ def display_success_message():
 def main():
     """Main post-generation script."""
     print("\n🔧 Running post-generation tasks...")
+
+    # Remove cursor rules if not requested
+    remove_cursor_rules()
 
     # Clean up conditional empty files
     remove_empty_files()
