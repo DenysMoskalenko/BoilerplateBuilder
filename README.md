@@ -101,6 +101,22 @@ This template supports **4 different project types**:
 - 🧪 **HTTP client testing** with httpx
 - 📚 **Interactive API docs** at `/docs` and `/redoc`
 
+### Cursor IDE Integration (Optional)
+
+- 🎯 **18 Comprehensive Python Rules** for consistent code style
+- 🔧 **Automatic Code Guidance** in Cursor IDE
+- 📋 **Organized Categories**: Core language, tooling, architecture, workflow
+- ⚡ **Modern Python 3.12+** features and best practices
+- 🏗️ **Pydantic-first** approach for data modeling
+- 🧪 **Testing & Linting** automation rules
+- 📦 **UV & Ruff** integration standards
+
+The Cursor rules include:
+- **Core Language (1-6)**: Modern Python features, typing, self-documenting code
+- **Development Tools (7-13)**: UV package manager, Ruff linting, pytest workflows
+- **Architecture (14-16)**: Pydantic models, settings management, dependency injection
+- **Workflow (17-18)**: Task focus, code preservation practices
+
 ## 📖 Usage
 
 ### Interactive Generation
@@ -120,6 +136,7 @@ You'll be prompted for:
 - **Pre-commit hooks**: Enable/disable pre-commit
 - **GitHub Actions**: Enable/disable CI/CD
 - **Git initialization**: Auto-initialize git repo
+- **Cursor rules**: Include comprehensive Python coding rules for Cursor IDE (optional)
 
 ### Non-Interactive Generation
 
@@ -129,7 +146,8 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder \
   project_name="MyAwesomeAPI" \
   project_type="fastapi_db" \
   author_name="John Doe" \
-  author_email="john@example.com"
+  author_email="john@example.com" \
+  add_cursor_rules="yes"
 ```
 
 ## 🏃‍♂️ Getting Started with Generated Project
@@ -177,6 +195,28 @@ make lint              # Format and lint code
 make test              # Run tests
 make test-coverage     # Run tests with coverage
 ```
+
+### 6. Cursor IDE Rules (if enabled)
+
+If you selected "yes" for Cursor rules, your project includes a `.cursor/rules/` directory with:
+
+- **Automatic code guidance** when writing Python code
+- **18 organized rules** covering modern Python practices
+- **Consistent style enforcement** across your team
+- **Built-in examples** for FastAPI, Pydantic, and SQLAlchemy patterns
+
+**Using with Cursor IDE:**
+1. Open your project in Cursor IDE
+2. The rules automatically activate for any Python files
+3. Cursor will suggest code following the established patterns
+4. Rules cover everything from typing to testing workflows
+
+**Rule organization:**
+- `00-index.mdc` - Overview of all rules
+- `01-python-core.mdc` - Core language features
+- `02-python-tooling.mdc` - Development tools
+- `03-python-architecture.mdc` - Data modeling & DI
+- `04-python-workflow.mdc` - Development practices
 
 ## 🗄️ Database Projects
 

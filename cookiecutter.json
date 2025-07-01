@@ -24,5 +24,9 @@
     "initialize_git": [
         "no",
         "yes"
+    ],
+    "add_cursor_rules": [
+        "no",
+        "yes"
     ]
 }
