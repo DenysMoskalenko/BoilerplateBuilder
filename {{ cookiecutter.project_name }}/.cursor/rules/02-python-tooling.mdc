@@ -49,7 +49,7 @@ alwaysApply: false
 
 - **Development dependencies** in `[dependency-groups.dev]`:
   - Testing tools (pytest, pytest-cov)
-  - Linters (ruff, mypy)
+  - Linters and formatters (ruff)
   - Test utilities (polyfactory, testcontainers)
 
 ## Example: Complete pyproject.toml

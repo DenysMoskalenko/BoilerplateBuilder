@@ -38,11 +38,10 @@ from app.core.exceptions import AlreadyExistError, NotFoundError
 
 # Environment configuration (Rule 10)
 class Settings(BaseSettings):
-    """Type-safe environment configuration."""
-    database_url: str
-    api_key: str
-    redis_url: str | None = None
-    debug: bool = False
+    DATABASE_URL: str
+    API_KEY: str
+    REDIS_URL: str | None = None
+    DEBUG: bool = False
 
     model_config = SettingsConfigDict(
         case_sensitive=True,

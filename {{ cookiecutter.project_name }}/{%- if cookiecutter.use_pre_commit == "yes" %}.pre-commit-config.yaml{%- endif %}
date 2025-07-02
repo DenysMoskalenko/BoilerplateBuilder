@@ -13,18 +13,8 @@ repos:
       - id: mixed-line-ending
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.11
+    rev: v0.12.1
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        additional_dependencies:
-          - types-python-dateutil
-          - types-requests
-          - pydantic
-        args: [--strict, --ignore-missing-imports]
