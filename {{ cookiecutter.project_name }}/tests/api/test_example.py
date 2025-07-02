@@ -41,7 +41,7 @@ class TestExamplesCreate:
 
         response = await client.post('/examples', json=payload)
         assert response.status_code == 409
-        assert response.json()['detail'] == 'Example not unique'
+        assert response.json()['detail'] == 'Example with this name already exists'
 
     async def test_fail_unreal_birthday(self, client: AsyncClient):
         payload = {

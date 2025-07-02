@@ -2,10 +2,8 @@
 from typing import Annotated
 
 from fastapi import Depends
-from psycopg.errors import UniqueViolation
 from pydantic import TypeAdapter
 from sqlalchemy import delete, insert, select, update
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.examples.schemas import Example, ExampleCreate, ExampleUpdate
@@ -36,19 +34,14 @@ class ExampleService:
             await self._validate_example(creation)
 
             query = insert(ExampleModel).values(name=creation.name, birthday=creation.birthday).returning(ExampleModel)
-            try:
-                example = await self._session.scalar(query)
-            except IntegrityError as e:
-                if isinstance(e.orig, UniqueViolation):
-                    raise AlreadyExistError('Example not unique')
-                raise e
+            example = await self._session.scalar(query)
 
         return Example.model_validate(example)
 
     async def update_example(self, example_id: int, updates: ExampleUpdate) -> Example:
         async with self._session.begin_nested():
-            await self.get_example_by_id(example_id)
-            await self._validate_example(updates)
+            await self.get_example_by_id(example_id)  # Validate example exists
+            await self._validate_example(updates, current_example_id=example_id)
 
             query = (
                 update(ExampleModel)
@@ -64,6 +57,13 @@ class ExampleService:
         query = delete(ExampleModel).filter(ExampleModel.id == example_id)
         await self._session.execute(query)
 
-    async def _validate_example(self, creation: ExampleCreate | ExampleUpdate) -> None:
-        """Here we just need to check if example is unique and other stuff like that"""
+    async def _validate_example(self, example_payload: ExampleCreate | ExampleUpdate, current_example_id: int | None = None) -> None:
+        """Validate example data and check for duplicates."""
+        query = select(ExampleModel).filter(ExampleModel.name == example_payload.name)
+        if current_example_id is not None:
+            query = query.filter(ExampleModel.id != current_example_id)
+
+        example_exists = await self._session.scalar(select(query.exists()))
+        if example_exists:
+            raise AlreadyExistError('Example with this name already exists')
 {%- endif %}
