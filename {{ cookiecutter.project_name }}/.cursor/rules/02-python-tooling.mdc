@@ -1,7 +1,7 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: "Python development tools and dependency management with UV, Ruff, and Pytest"
+globs: ["*.py", "pyproject.toml", "requirements.txt"]
+alwaysApply: true
 ---
 # Python Development Tools & Setup
 

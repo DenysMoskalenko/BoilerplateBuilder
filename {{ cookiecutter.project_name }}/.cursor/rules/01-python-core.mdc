@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: "Core Python 3.12+ language features, modern typing, and code organization"
+globs: ["*.py"]
 alwaysApply: false
 ---
 # Python Core Language Rules

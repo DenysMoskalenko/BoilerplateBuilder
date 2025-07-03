@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: "Python architecture patterns with Pydantic models and dependency injection"
+globs: ["*.py"]
 alwaysApply: false
 ---
 # Python Architecture & Data Modeling
@@ -38,6 +38,7 @@ from app.core.exceptions import AlreadyExistError, NotFoundError
 
 # Environment configuration (Rule 10)
 class Settings(BaseSettings):
+    # Fail-fast, if no variables provided - fail application run immediately
     DATABASE_URL: str
     API_KEY: str
     REDIS_URL: str | None = None

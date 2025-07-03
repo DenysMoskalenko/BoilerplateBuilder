@@ -1,7 +1,7 @@
 ---
-description:
+description: "Index and overview of all Python development rules and their organization"
 globs:
-alwaysApply: false
+alwaysApply: true
 ---
 # Python Cursor Rules Index
 

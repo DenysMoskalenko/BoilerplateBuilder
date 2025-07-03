@@ -1,7 +1,7 @@
 ---
-description:
-globs:
-alwaysApply: false
+description: "Python development workflow, checklists, and best practices"
+globs: ["*.py", "pyproject.toml"]
+alwaysApply: true
 ---
 # Python Development Workflow
 
