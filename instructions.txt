@@ -17,3 +17,30 @@
 17) If we remove some library functional in the project - do not forget to remove this library dependency from project requirements
 18) If we make some iterations working on the feature, do not use names like "Final", we never now where is the Final, so make some understandable and iterable naming.
 19) When you creating the new code - be sure you do not break all existing code and logic
+
+## Testing the extract_to_current_dir feature:
+
+### Test 1: Normal behavior (extract_to_current_dir="Create New")
+```bash
+mkdir test_normal && cd test_normal
+cookiecutter /path/to/BoilerplateBuilder --no-input extract_to_current_dir="Create New" project_name="TestProject"
+# Should create TestProject/ directory with all files inside
+ls -la TestProject/
+```
+
+### Test 2: Extract to current directory (extract_to_current_dir="Extract Here")
+```bash
+mkdir test_extract && cd test_extract
+cookiecutter /path/to/BoilerplateBuilder --no-input extract_to_current_dir="Extract Here" project_name="TestProject"
+# Should extract all files to current directory, no TestProject/ subdirectory
+ls -la  # Files should be in current directory
+```
+
+### Test 3: Extract to existing repo with conflicts
+```bash
+mkdir test_conflict && cd test_conflict
+echo "# Existing file" > README.md
+cookiecutter /path/to/BoilerplateBuilder --no-input extract_to_current_dir="Extract Here" project_name="TestProject"
+# Template README.md should overwrite existing one
+cat README.md  # Should show template content
+```

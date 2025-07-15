@@ -1,4 +1,8 @@
 {
+    "extract_to_current_dir": [
+        "Create New",
+        "Extract Here"
+    ],
     "project_name": "MyProject",
     "project_description": "A Python project",
     "author_name": "Your Name",

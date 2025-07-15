@@ -209,3 +209,4 @@ __marimo__/
 # Text Editor
 .vscode
 .idea
+.DS_Store

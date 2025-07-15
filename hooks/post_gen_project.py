@@ -8,6 +8,58 @@ import sys
 from pathlib import Path
 
 
+def extract_to_current_directory():
+    """Extract template content to current directory if requested."""
+    extract_to_current = "{{ cookiecutter.extract_to_current_dir }}"
+    if extract_to_current != "Extract Here":
+        return
+
+    # When this hook runs, we are already inside the generated project directory
+    # We need to move all contents from here to the parent directory
+    project_dir = Path.cwd()  # Current directory (inside the generated project)
+    parent_dir = project_dir.parent  # Where cookiecutter was originally run
+    project_name = "{{ cookiecutter.project_name }}"
+
+    print(f"📁 Extracting content from {project_name}/ to parent directory...")
+
+    # Move all files and directories from project_dir to parent_dir
+    for item in project_dir.iterdir():
+        dest_path = parent_dir / item.name
+
+        # If destination exists, we need to handle the conflict
+        if dest_path.exists():
+            if dest_path.is_dir() and item.is_dir():
+                # Merge directories by moving contents
+                for sub_item in item.iterdir():
+                    sub_dest = dest_path / sub_item.name
+                    if sub_dest.exists():
+                        if sub_dest.is_dir():
+                            shutil.rmtree(sub_dest)
+                        else:
+                            sub_dest.unlink()
+                    shutil.move(str(sub_item), str(sub_dest))
+                # Remove the now-empty source directory
+                item.rmdir()
+            else:
+                # Replace file/directory
+                if dest_path.is_dir():
+                    shutil.rmtree(dest_path)
+                else:
+                    dest_path.unlink()
+                shutil.move(str(item), str(dest_path))
+        else:
+            # No conflict, just move
+            shutil.move(str(item), str(dest_path))
+
+    # Change working directory to parent directory for subsequent operations
+    os.chdir(parent_dir)
+
+    # Remove the now-empty project directory
+    if project_dir.exists() and not any(project_dir.iterdir()):
+        project_dir.rmdir()
+        print(f"✓ Content extracted to current directory, removed empty {project_name}/ directory")
+
+
 def remove_cursor_rules():
     """Remove .cursor directory if not requested."""
     add_cursor_rules = "{{ cookiecutter.add_cursor_rules }}"
@@ -275,13 +327,17 @@ def display_success_message():
     """Display success message with next steps."""
     project_name = "{{ cookiecutter.project_name }}"
     project_type = "{{ cookiecutter.project_type }}"
+    extract_to_current = "{{ cookiecutter.extract_to_current_dir }}"
 
     print("\n" + "="*60)
     print(f"🎉 Project {project_name} created successfully!")
     print("="*60)
 
     print(f"\n📁 Project type: {project_type}")
-    print(f"   cd {project_name}")
+    if extract_to_current == "Extract Here":
+        print("   Project files extracted to current directory")
+    else:
+        print(f"   cd {project_name}")
 
     print("\n🚀 Next steps:")
     print("   1. Review and update the .env file with your configuration")
@@ -332,6 +388,9 @@ def display_success_message():
 def main():
     """Main post-generation script."""
     print("\n🔧 Running post-generation tasks...")
+
+    # Extract to current directory if requested (must be first)
+    extract_to_current_directory()
 
     # Remove cursor rules if not requested
     remove_cursor_rules()

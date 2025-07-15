@@ -127,6 +127,7 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 
 You'll be prompted for:
 
+- **Extract to current dir**: Choose "Create New" (default) or "Extract Here" to extract files directly to current directory
 - **Project name**: Your project name
 - **Project description**: Brief description
 - **Author name**: Your name
@@ -143,6 +144,7 @@ You'll be prompted for:
 ```bash
 cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder \
   --no-input \
+  extract_to_current_dir="Create New" \
   project_name="MyAwesomeAPI" \
   project_type="fastapi_db" \
   author_name="John Doe" \
@@ -150,11 +152,35 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder \
   add_cursor_rules="yes"
 ```
 
+### Extract to Existing Repository
+
+If you already have a Git repository and want to add the boilerplate directly to it:
+
+```bash
+# Navigate to your existing repository
+cd my-existing-repo
+
+# Generate project and extract to current directory
+cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder \
+  --no-input \
+  extract_to_current_dir="Extract Here" \
+  project_name="MyAPI" \
+  project_type="fastapi_db"
+```
+
+This will:
+- Generate the template in a temporary subdirectory
+- Move all files to your current directory
+- Remove the temporary subdirectory
+- Template files will overwrite any existing files with the same name
+
 ## 🏃‍♂️ Getting Started with Generated Project
 
 ### 1. Enter your project directory
 
 ```bash
+# If extracted to current directory, you're already there
+# Otherwise:
 cd your-project-name
 ```
 
