@@ -404,14 +404,14 @@ def main():
     # Create .env file
     create_env_file()
 
-    # Initialize git repository
-    initialize_git()
-
     # Install dependencies
     install_dependencies()
 
     # Run linter and formatter
     run_linter_and_formatter()
+
+    # Initialize git repository (LAST step before success message to add everything to git)
+    initialize_git()
 
     # Display success message
     display_success_message()
