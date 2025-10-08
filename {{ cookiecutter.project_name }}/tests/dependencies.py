@@ -25,5 +25,6 @@ def override_dependency(app: FastAPI, dependency: Callable, override: Callable) 
 
     for route in app.router.routes:
         if isinstance(route, Mount):
-            route.app.dependency_overrides[dependency] = override
+            if hasattr(route.app, 'dependency_overrides'):
+                route.app.dependency_overrides[dependency] = override
 {%- endif %}

@@ -3,50 +3,50 @@ name = "{{ cookiecutter.project_name.lower() }}"
 version = "0.1.0"
 description = "{{ cookiecutter.project_description }}"
 authors = [
-    "{{ cookiecutter.author_name }} <{{ cookiecutter.author_email }}>",
+    { name = "{{ cookiecutter.author_name }}", email = "{{ cookiecutter.author_email }}" },
 ]
 readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version }}"
 
 dependencies = [
 {%- if cookiecutter.project_type == "fastapi_db" %}
-    "alembic>=1.16.2",
-    "fastapi>=0.115.14",
-    "psycopg[binary]>=3.2.9",
-    "pydantic-settings>=2.10.1",
-    "pydantic[email]>=2.11.7",
-    "sqlalchemy>=2.0.41",
-    "uvicorn[standard]>=0.34.3",
+    "alembic>=1.16.5",
+    "fastapi>=0.118.1",
+    "psycopg[binary]>=3.2.10",
+    "pydantic-settings>=2.11.0",
+    "pydantic[email]>=2.12.0",
+    "sqlalchemy>=2.0.43",
+    "uvicorn[standard]>=0.37.0",
 {%- elif cookiecutter.project_type == "fastapi_slim" %}
-    "fastapi>=0.115.14",
-    "pydantic-settings>=2.10.1",
-    "pydantic[email]>=2.11.7",
-    "uvicorn[standard]>=0.34.3",
+    "fastapi>=0.118.1",
+    "pydantic-settings>=2.11.0",
+    "pydantic[email]>=2.12.0",
+    "uvicorn[standard]>=0.37.0",
 {%- elif cookiecutter.project_type == "cli_db" %}
-    "alembic>=1.16.2",
-    "psycopg[binary]>=3.2.9",
-    "pydantic-settings>=2.10.1",
-    "pydantic[email]>=2.11.7",
-    "sqlalchemy>=2.0.41",
+    "alembic>=1.16.5",
+    "psycopg[binary]>=3.2.10",
+    "pydantic-settings>=2.11.0",
+    "pydantic[email]>=2.12.0",
+    "sqlalchemy>=2.0.43",
 {%- else %}
-    "pydantic-settings>=2.10.1",
-    "pydantic[email]>=2.11.7",
+    "pydantic-settings>=2.11.0",
+    "pydantic[email]>=2.12.0",
 {%- endif %}
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.12.1",
-    "pre-commit>=4.2.0",
+    "ruff>=0.14.0",
+    "pre-commit>=4.3.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     "httpx>=0.28.1",
 {%- endif %}
-    "polyfactory>=2.21.0",
-    "pytest>=8.4.1",
-    "pytest-asyncio>=1.0.0",
-    "pytest-cov>=6.2.1",
+    "polyfactory>=2.22.2",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
-    "testcontainers[postgres]>=4.10.0",
+    "testcontainers[postgres]>=4.13.2",
 {%- endif %}
 ]
 

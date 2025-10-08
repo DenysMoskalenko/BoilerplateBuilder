@@ -60,15 +60,6 @@ def extract_to_current_directory():
         print(f"✓ Content extracted to current directory, removed empty {project_name}/ directory")
 
 
-def remove_cursor_rules():
-    """Remove .cursor directory if not requested."""
-    add_cursor_rules = "{{ cookiecutter.add_cursor_rules }}"
-    if add_cursor_rules.lower() != "yes":
-        cursor_path = Path.cwd() / ".cursor"
-        if cursor_path.exists():
-            shutil.rmtree(cursor_path)
-            print("Removed .cursor directory (Cursor rules not requested)")
-
 
 def remove_empty_files():
     """Remove files that were conditionally empty."""
@@ -391,9 +382,6 @@ def main():
 
     # Extract to current directory if requested (must be first)
     extract_to_current_directory()
-
-    # Remove cursor rules if not requested
-    remove_cursor_rules()
 
     # Clean up conditional empty files
     remove_empty_files()
