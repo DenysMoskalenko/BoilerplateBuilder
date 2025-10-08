@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         project_type: [fastapi_db, fastapi_slim, cli_db, cli_slim]
-        python_version: ["3.11", "3.12"]
+        python_version: ["3.11", "3.12", "3.13"]
 
     steps:
     - name: Checkout cookiecutter template

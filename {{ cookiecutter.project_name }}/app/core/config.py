@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = 'Boilerplate'
+    PROJECT_NAME: str = '{{ cookiecutter.project_name }}'
 {%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
 
     DATABASE_URL: PostgresDsn

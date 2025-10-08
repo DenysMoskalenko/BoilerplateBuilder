@@ -2,7 +2,6 @@
 import logging
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 {%- if cookiecutter.project_type == "fastapi_db" %}
 
@@ -36,14 +35,6 @@ def create_app() -> FastAPI:
 {%- else %}
     _app.include_router(health_checks_router)
 {%- endif %}
-
-    _app.add_middleware(
-        CORSMiddleware,
-        allow_origins=['*'],
-        allow_credentials=True,
-        allow_methods=['*'],
-        allow_headers=['*'],
-    )
     return _app
 
 

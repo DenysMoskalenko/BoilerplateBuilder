@@ -3,8 +3,8 @@
 
 ### Locally:
 
-1. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
-2. Create virtual environment: `uv venv --python 3.12`
+1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
+2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
 3. Activate environment `source .venv/bin/activate`
 4. Install project dependencies: `uv sync`
 5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
@@ -34,8 +34,8 @@ Before making any commits—ensure you are using correct work profile.
 
 ### Locally:
 
-1. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
-2. Create virtual environment: `uv venv --python 3.12`
+1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
+2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
 3. Activate environment `source .venv/bin/activate`
 4. Install project dependencies: `uv sync`
 5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
@@ -65,8 +65,8 @@ Before making any commits—ensure you are using correct work profile.
 
 ### Locally:
 
-1. (Optional) Install required 3.12 python `uv python install 3.12` if not installed
-2. Create virtual environment: `uv venv --python 3.12`
+1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
+2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
 3. Activate environment `source .venv/bin/activate`
 4. Install project dependencies: `uv sync`
 5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
