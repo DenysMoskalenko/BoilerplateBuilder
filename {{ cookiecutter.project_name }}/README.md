@@ -15,7 +15,7 @@
 1. Run linter using `make lint`
 2. Run tests using `make test` (Up dependencies if needed)
 
-### Creation of pre-commit hook
+### Creation of a pre-commit hook
 
 After you installed all dependencies(including dev dependencies):
 
@@ -29,6 +29,8 @@ Before making any commits—ensure you are using correct work profile.
 
 1. Check you name/email by `git config user.name` and `git config user.email`
 2. Change name/email by `git config user.name "Your Fullname"`/`git config user.email "YourWorkEmail"`
+3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`
+4. Force Signing: always use `git commit -S` for explicit signing or let your IDE do the job)
 {%- elif cookiecutter.project_type == "fastapi_slim" %}
 # {{ cookiecutter.project_name }}
 
@@ -46,7 +48,7 @@ Before making any commits—ensure you are using correct work profile.
 1. Run linter using `make lint`
 2. Run tests using `make test`
 
-### Creation of pre-commit hook
+### Creation of a pre-commit hook
 
 After you installed all dependencies(including dev dependencies):
 
@@ -60,6 +62,8 @@ Before making any commits—ensure you are using correct work profile.
 
 1. Check you name/email by `git config user.name` and `git config user.email`
 2. Change name/email by `git config user.name "Your Fullname"`/`git config user.email "YourWorkEmail"`
+3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`
+4. Force Signing: always use `git commit -S` for explicit signing or let your IDE do the job)
 {%- else %}
 # {{ cookiecutter.project_name }}
 
@@ -77,7 +81,7 @@ Before making any commits—ensure you are using correct work profile.
 1. Run linter using `make lint`
 2. Run tests using `make test`
 
-### Creation of pre-commit hook
+### Creation of a pre-commit hook
 
 After you installed all dependencies(including dev dependencies):
 
@@ -91,4 +95,6 @@ Before making any commits—ensure you are using correct work profile.
 
 1. Check you name/email by `git config user.name` and `git config user.email`
 2. Change name/email by `git config user.name "Your Fullname"`/`git config user.email "YourWorkEmail"`
+3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`
+4. Force Signing: always use `git commit -S` for explicit signing or let your IDE do the job)
 {%- endif %}
