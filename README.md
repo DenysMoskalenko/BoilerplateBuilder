@@ -101,7 +101,14 @@ This template supports **4 different project types**:
 - 🧪 **HTTP client testing** with httpx
 - 📚 **Interactive API docs** at `/docs` and `/redoc`
 
+### Observability Features (Optional)
 
+- 📊 **OpenTelemetry** distributed tracing
+- 📈 **Prometheus** metrics with custom business metrics
+- 📝 **Structured JSON logging** with trace correlation
+- 🔍 **Local development stack** with Grafana, Tempo, Loki, and Promtail
+- 📊 **Pre-built Grafana dashboards** tailored to your project type
+- 🎯 **Easy-to-use decorators** for instrumenting your code
 
 ## 📖 Usage
 
@@ -120,6 +127,10 @@ You'll be prompted for:
 - **Author email**: Your email
 - **Project type**: Choose from `fastapi_db`, `fastapi_slim`, `cli_db`, `cli_slim`
 - **Python version**: 3.11, 3.12, or 3.13
+- **Use observability**: Add OpenTelemetry tracing, Prometheus metrics, and structured logging
+- **Use local telemetry stack**: Include local Grafana/Tempo/Prometheus/Loki stack for development
+  - ⚠️ **Note**: `generate_local_otel_stack` requires `use_otel_observability` to be enabled. If you select `use_otel_observability=no`, the project generation will fail with a clear error message.
+  - 💡 **Tip**: If you encounter a "directory already exists" error, it may be from a previous failed generation. Remove the directory and try again: `rm -rf YourProjectName`
 - **Pre-commit hooks**: Enable/disable pre-commit
 - **GitHub Actions**: Enable/disable CI/CD
 - **Git initialization**: Auto-initialize git repo
@@ -293,6 +304,94 @@ Database projects use testcontainers for isolated testing:
 - Automatic PostgreSQL container setup
 - Database migrations applied before tests
 - Rollback after each test for isolation
+
+## 📊 Observability
+
+### What's Included
+
+When you enable observability, your project gets:
+
+1. **Distributed Tracing** with OpenTelemetry
+   - Automatic instrumentation for FastAPI routes
+   - SQLAlchemy query tracing (for database projects)
+   - Custom span creation support
+
+2. **Prometheus Metrics**
+   - HTTP request metrics (FastAPI projects)
+   - Custom business metrics with easy-to-use decorators
+   - Example metrics based on your project type
+
+3. **Structured JSON Logging**
+   - Trace and span ID correlation
+   - Compatible with Grafana Loki
+   - Easy to parse and query
+
+### Local Development Stack
+
+⚠️ **Important**: The local telemetry stack (`generate_local_otel_stack`) requires observability to be enabled (`use_otel_observability=yes`). If you try to generate a project with `use_otel_observability=no` and `generate_local_otel_stack=yes`, the generation will fail with a clear error message.
+
+If you enable the local telemetry stack, you get a full observability setup with:
+
+- **Grafana** (http://localhost:3000) - Visualization and dashboards
+- **Tempo** - Distributed tracing backend
+- **Prometheus** - Metrics collection
+- **Loki** - Log aggregation
+- **OTEL Collector** - Telemetry data pipeline
+
+### Quick Start with Observability
+
+```bash
+# Generate project with observability
+cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder \
+  --no-input \
+  project_name="MyObservableAPI" \
+  project_type="fastapi_db" \
+  use_otel_observability="yes" \
+  generate_local_otel_stack="yes"
+
+cd MyObservableAPI
+
+# Start the full stack
+docker-compose up -d
+
+# Access dashboards
+# Grafana: http://localhost:3000 (no login required)
+# Prometheus: http://localhost:9090
+# Tempo: http://localhost:3200
+```
+
+### Instrumenting Your Code
+
+The template includes helper decorators for easy instrumentation:
+
+```python
+from app.observability.metrics import counters, gauges
+from app.observability.metrics.primitives import increment_after, track_inflight
+
+# Track in-flight operations
+@track_inflight(gauges.my_gauge.labels('operation_name'))
+async def my_operation():
+    pass
+
+# Count operation completions
+@increment_after(counters.my_counter.labels('operation', 'success'))
+async def my_operation():
+    pass
+```
+
+### Production Deployment
+
+For production, configure the OTLP endpoint to point to your observability backend:
+
+```bash
+OBSERVABILITY_OTLP_GRPC_ENDPOINT=grpc://your-otel-collector:4317
+OBSERVABILITY_TRACING_ENABLED=True
+OBSERVABILITY_METRICS_ENABLED=True
+OBSERVABILITY_LOGS_IN_JSON=True
+OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=10  # Sample 10% of traces
+```
+
+Compatible with: Grafana Cloud, Datadog, New Relic, Honeycomb, and any OTLP-compatible backend.
 
 ## 🔧 GitHub Actions
 

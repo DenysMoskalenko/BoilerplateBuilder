@@ -6,4 +6,5 @@ from app.api.examples.schemas import ExampleCreate
 
 class ExampleCreateFactory(ModelFactory):
     __model__ = ExampleCreate
+    __check_model__ = False
 {%- endif %}

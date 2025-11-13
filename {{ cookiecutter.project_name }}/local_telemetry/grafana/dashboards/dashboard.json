@@ -1,0 +1,199 @@
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+{% raw %}{
+  "id": null,
+  "uid": "{% endraw %}{{ cookiecutter.project_name.lower() }}{% raw %}-overview",
+  "title": "{% endraw %}{{ cookiecutter.project_name }}{% raw %} Overview",
+  "tags": [{% endraw %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+{% raw %}    "fastapi",{% endraw %}
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{% raw %}    "database",{% endraw %}
+{%- endif %}
+{% raw %}    "observability"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [{% endraw %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+{% raw %}    {
+      "type": "row",
+      "title": "HTTP Metrics",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "type": "stat",
+      "title": "Requests/sec",
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 1},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[1m]))",
+          "legendFormat": "all"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests by Status",
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 1},
+      "targets": [
+        {
+          "expr": "sum by (status)(rate(http_requests_total[1m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests by Route",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 1},
+      "targets": [
+        {
+          "expr": "sum by (handler)(round(increase(http_requests_total{handler!~\"/metrics|/health-check\"}[1m])))",
+          "legendFormat": "{{handler}}"
+        }
+      ]
+    },{% endraw %}
+{%- endif %}
+{%- if cookiecutter.project_type == "fastapi_db" %}
+{% raw %}    {
+      "type": "row",
+      "title": "Business Metrics",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 7}
+    },
+    {
+      "type": "timeseries",
+      "title": "Example Operations (selected range)",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "sum by (operation)(increase(examples_operations_total[$__range]))",
+          "legendFormat": "{{operation}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Inflight Operations",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "inflight_operations",
+          "legendFormat": "{{operation}}"
+        }
+      ]
+    },{% endraw %}
+{%- elif cookiecutter.project_type == "cli_db" %}
+{% raw %}    {
+      "type": "row",
+      "title": "Business Metrics",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "Database Operations (selected range)",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 1},
+      "targets": [
+        {
+          "expr": "sum by (operation)(increase(database_operations_total[$__range]))",
+          "legendFormat": "{{operation}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Inflight Database Operations",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 1},
+      "targets": [
+        {
+          "expr": "inflight_database_operations",
+          "legendFormat": "{{operation}}"
+        }
+      ]
+    },{% endraw %}
+{%- else %}
+{% raw %}    {
+      "type": "row",
+      "title": "Example Metrics (Replace with your actual business metrics)",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": {% endraw %}
+{%- if cookiecutter.project_type == "fastapi_slim" %}7{%- else %}0{%- endif %}{% raw %}}
+    },
+    {
+      "type": "text",
+      "title": "Getting Started",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": {% endraw %}
+{%- if cookiecutter.project_type == "fastapi_slim" %}8{%- else %}1{%- endif %}{% raw %}},
+      "options": {
+        "content": "# TODO: Add Your Business Metrics\n\nThis dashboard currently only shows infrastructure metrics. To add your business metrics:\n\n1. Define your metrics in `app/observability/metrics/counters.py` or `gauges.py`\n2. Use the `@track_inflight` and `@increment_after` decorators in your code\n3. Update this dashboard with panels that query your custom metrics\n\nExample:\n```python\nfrom app.observability.metrics import counters\nfrom app.observability.metrics.primitives import increment_after\n\n@increment_after(counters.example_operations_total.labels('my_operation'))\nasync def my_function():\n    pass\n```\n\nThen add a panel with query: `increase(example_operations_total[$__range])`",
+        "mode": "markdown"
+      }
+    },{% endraw %}
+{%- endif %}
+{%- if cookiecutter.use_otel_observability == "yes" %}
+{% raw %}    {
+      "type": "row",
+      "title": "Logs & Traces",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": {% endraw %}
+{%- if cookiecutter.project_type == "fastapi_db" %}14{%- elif cookiecutter.project_type == "fastapi_slim" %}14{%- elif cookiecutter.project_type == "cli_db" %}7{%- else %}7{%- endif %}{% raw %}}
+    },
+    {
+      "type": "logs",
+      "title": "Application Logs",
+      "gridPos": {"h": 14, "w": 14, "x": 0, "y": {% endraw %}
+{%- if cookiecutter.project_type == "fastapi_db" %}15{%- elif cookiecutter.project_type == "fastapi_slim" %}15{%- elif cookiecutter.project_type == "cli_db" %}8{%- else %}8{%- endif %}{% raw %}},
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [
+        {
+          "expr": "{compose_service=\"{% endraw %}{{ cookiecutter.project_name.lower() }}{% raw %}-app\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "prettifyLogMessage": false
+      }
+    },
+    {
+      "type": "table",
+      "title": "Traces",
+      "gridPos": {"h": 14, "w": 10, "x": 14, "y": {% endraw %}
+{%- if cookiecutter.project_type == "fastapi_db" %}15{%- elif cookiecutter.project_type == "fastapi_slim" %}15{%- elif cookiecutter.project_type == "cli_db" %}8{%- else %}8{%- endif %}{% raw %}},
+      "datasource": {"type": "tempo", "uid": "tempo"},
+      "fieldConfig": {"defaults": {"custom": {}}, "overrides": []},
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "legend": {"showLegend": false},
+        "footer": {"show": false, "reducer": ["sum"], "fields": "", "countRows": false}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "tempo", "uid": "tempo"},
+          "filters": [
+            {
+              "id": "service-name",
+              "operator": "=",
+              "scope": "resource",
+              "tag": "service.name",
+              "value": ["{% endraw %}{{ cookiecutter.project_name }}{% raw %}"],
+              "valueType": "string"
+            }
+          ],
+          "limit": 20,
+          "queryType": "traceqlSearch",
+          "refId": "A",
+          "tableType": "traces"
+        }
+      ]
+    }{% endraw %}
+{%- endif %}
+{% raw %}  ]
+}{% endraw %}
+{%- endif %}

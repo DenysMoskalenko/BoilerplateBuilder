@@ -1,0 +1,49 @@
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://{{ cookiecutter.project_name.lower() }}-prometheus:9090
+    isDefault: true
+    uid: prom
+    jsonData:
+      httpMethod: POST
+
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://{{ cookiecutter.project_name.lower() }}-tempo:3200
+    uid: tempo
+    jsonData:
+      httpMethod: GET
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-2m'
+        spanEndTimeShift: '2m'
+        # Use a custom LogQL query to match raw IDs in the log line
+        # to avoid dependency on specific labels. This works with JSON logs
+        # and plain text as long as the trace/span IDs are present.
+        filterByTraceID: false
+        filterBySpanID: false
+        customQuery: true
+        # Match by trace ID only and rely on compose_service label added by promtail
+        # to keep the query efficient and independent of span IDs in logs.
+        query: '{compose_service=~".+"} |= "$traceId"'
+      tracesToMetrics:
+        datasourceUid: prom
+      serviceMap: true
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://{{ cookiecutter.project_name.lower() }}-loki:3100
+    uid: loki
+    jsonData:
+      derivedFields:
+        - name: trace_id
+          matcherRegex: '"trace_id":"([a-f0-9]+)"'
+          datasourceUid: tempo
+          url: '$${__value.raw}'
+{%- endif %}

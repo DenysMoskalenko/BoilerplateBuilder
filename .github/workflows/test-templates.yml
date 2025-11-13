@@ -11,155 +11,192 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project_type: [fastapi_db, fastapi_slim, cli_db, cli_slim]
-        python_version: ["3.11", "3.12", "3.13"]
+        project_type: [ fastapi_db, fastapi_slim, cli_db, cli_slim ]
+        python_version: [ "3.11", "3.12", "3.13" ]
+        observability_profile: [ disabled, enabled_with_stack ]
+    env:
+      USE_OTEL_OBSERVABILITY: ${{ matrix.observability_profile == 'enabled_with_stack' && 'yes' || 'no' }}
+      GENERATE_LOCAL_OTEL_STACK: ${{ matrix.observability_profile == 'enabled_with_stack' && 'yes' || 'no' }}
 
     steps:
-    - name: Checkout cookiecutter template
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        clean: true
+      - name: Checkout cookiecutter template
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          clean: true
 
-    - name: Clear any cached files and verify template
-      run: |
-        # Force clear any potential caches
-        rm -rf ~/.cache/cookiecutter
-        rm -rf /tmp/cookiecutter*
-        echo "Current commit: $(git rev-parse HEAD)"
-        echo "Template database.py line 11:"
-        sed -n '11p' "{{ cookiecutter.project_name }}/app/core/database.py"
+      - name: Clear any cached files and verify template
+        run: |
+          # Force clear any potential caches
+          rm -rf ~/.cache/cookiecutter
+          rm -rf /tmp/cookiecutter*
+          echo "Current commit: $(git rev-parse HEAD)"
+          echo "Template database.py line 11:"
+          sed -n '11p' "{{ cookiecutter.project_name }}/app/core/database.py"
 
-    - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        python-version: ${{ matrix.python_version }}
-        enable-cache: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+          enable-cache: false
 
-    - name: Install cookiecutter
-      run: |
-        uv tool install cookiecutter
+      - name: Install cookiecutter
+        run: |
+          uv tool install cookiecutter
 
-    - name: Generate project from template
-      run: |
-        cookiecutter . --no-input \
-          project_name="TestProject" \
-          project_type="${{ matrix.project_type }}" \
-          python_version="${{ matrix.python_version }}" \
-          author_name="Test Author" \
-          author_email="test@example.com" \
-          use_pre_commit="yes" \
-          use_github_actions="yes" \
-          initialize_git="no"
+      - name: Generate project from template
+        run: |
+          echo "Generating project_type=${{ matrix.project_type }} python=${{ matrix.python_version }} observability=${{ matrix.observability_profile }}"
+          cookiecutter . --no-input \
+            project_name="TestProject" \
+            project_type="${{ matrix.project_type }}" \
+            python_version="${{ matrix.python_version }}" \
+            author_name="Test Author" \
+            author_email="test@example.com" \
+            use_pre_commit="yes" \
+            use_github_actions="yes" \
+            initialize_git="no" \
+            use_otel_observability="$USE_OTEL_OBSERVABILITY" \
+            generate_local_otel_stack="$GENERATE_LOCAL_OTEL_STACK"
 
-    - name: Set up environment for generated project
-      working-directory: ./TestProject
-      run: |
-        # Create lock file and install dependencies
-        uv lock
-        uv sync
+      - name: Set up environment for generated project
+        working-directory: ./TestProject
+        run: |
+          # Create lock file and install dependencies
+          uv lock
+          uv sync
 
-        # Set up basic environment file
-        echo "PROJECT_NAME=TestProject" > .env
+          # Set up basic environment file
+          echo "PROJECT_NAME=TestProject" > .env
 
-    - name: Run linter
-      working-directory: ./TestProject
-      run: |
-        uv run --active ruff format .
-        uv run --active ruff check --fix .
-        uv run --active ruff format --check .
+      - name: Run linter
+        working-directory: ./TestProject
+        run: |
+          uv run --active ruff format .
+          uv run --active ruff check --fix .
+          uv run --active ruff format --check .
 
-    - name: Run tests
-      working-directory: ./TestProject
-      run: |
-        uv run --active pytest -v
+      - name: Run tests
+        working-directory: ./TestProject
+        run: |
+          uv run --active pytest -v
 
   test-template-generation:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python_version: ["3.11", "3.12"]
+        python_version: [ "3.11", "3.12" ]
     steps:
-    - name: Checkout cookiecutter template
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        clean: true
+      - name: Checkout cookiecutter template
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          clean: true
 
-    - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        python-version: ${{ matrix.python_version }}
-        enable-cache: false
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+          enable-cache: false
 
-    - name: Install cookiecutter
-      run: |
-        uv tool install cookiecutter
+      - name: Install cookiecutter
+        run: |
+          uv tool install cookiecutter
 
-    - name: Test template generation with different options
-      run: |
-        # Test all combinations of key options
-        for project_type in fastapi_db fastapi_slim cli_db cli_slim; do
-          for pre_commit in yes no; do
-            for github_actions in yes no; do
-              echo "Testing: $project_type, pre_commit=$pre_commit, github_actions=$github_actions"
+      - name: Test template generation with different options
+        run: |
+          # Test all combinations of key options
+          for project_type in fastapi_db fastapi_slim cli_db cli_slim; do
+            for pre_commit in yes no; do
+              for github_actions in yes no; do
+                for use_otel in yes no; do
+                  if [[ "$use_otel" == "yes" ]]; then
+                    generate_local_stack="yes"
+                  else
+                    generate_local_stack="no"
+                  fi
 
-              project_name="TestProject"
+                  echo "Testing: $project_type, pre_commit=$pre_commit, github_actions=$github_actions, observability=$use_otel, local_stack=$generate_local_stack"
 
-              cookiecutter . --no-input \
-                project_name="$project_name" \
-                project_type="$project_type" \
-                python_version="${{ matrix.python_version }}" \
-                use_pre_commit="$pre_commit" \
-                use_github_actions="$github_actions" \
-                initialize_git="no"
+                  project_name="TestProject"
 
-              # Verify key files exist
-              if [[ ! -f "$project_name/pyproject.toml" ]]; then
-                echo "❌ pyproject.toml missing"
-                exit 1
-              fi
+                  cookiecutter . --no-input \
+                    project_name="$project_name" \
+                    project_type="$project_type" \
+                    python_version="${{ matrix.python_version }}" \
+                    use_pre_commit="$pre_commit" \
+                    use_github_actions="$github_actions" \
+                    initialize_git="no" \
+                    use_otel_observability="$use_otel" \
+                    generate_local_otel_stack="$generate_local_stack"
 
-              if [[ ! -f "$project_name/Dockerfile" ]]; then
-                echo "❌ Dockerfile missing"
-                exit 1
-              fi
+                  # Verify key files exist
+                  if [[ ! -f "$project_name/pyproject.toml" ]]; then
+                    echo "❌ pyproject.toml missing"
+                    exit 1
+                  fi
 
-              if [[ ! -f "$project_name/Makefile" ]]; then
-                echo "❌ Makefile missing"
-                exit 1
-              fi
+                  if [[ ! -f "$project_name/Dockerfile" ]]; then
+                    echo "❌ Dockerfile missing"
+                    exit 1
+                  fi
 
-              # Verify conditional files
-              if [[ "$project_type" == *"db"* ]]; then
-                if [[ ! -f "$project_name/alembic.ini" ]]; then
-                  echo "❌ alembic.ini missing for database project"
-                  exit 1
-                fi
-                if [[ ! -f "$project_name/docker-compose.yaml" ]]; then
-                  echo "❌ docker-compose.yaml missing for database project"
-                  exit 1
-                fi
-              fi
+                  if [[ ! -f "$project_name/Makefile" ]]; then
+                    echo "❌ Makefile missing"
+                    exit 1
+                  fi
 
-              if [[ "$pre_commit" == "yes" ]]; then
-                if [[ ! -f "$project_name/.pre-commit-config.yaml" ]]; then
-                  echo "❌ .pre-commit-config.yaml missing"
-                  exit 1
-                fi
-              fi
+                  # Verify conditional files
+                  if [[ "$project_type" == *"db"* ]]; then
+                    if [[ ! -f "$project_name/alembic.ini" ]]; then
+                      echo "❌ alembic.ini missing for database project"
+                      exit 1
+                    fi
+                    if [[ ! -f "$project_name/docker-compose.yaml" ]]; then
+                      echo "❌ docker-compose.yaml missing for database project"
+                      exit 1
+                    fi
+                  fi
 
-              if [[ "$github_actions" == "yes" ]]; then
-                if [[ ! -f "$project_name/.github/workflows/pull_request.yml" ]]; then
-                  echo "❌ .github/workflows/pull_request.yml missing"
-                  exit 1
-                fi
-              fi
+                  if [[ "$pre_commit" == "yes" ]]; then
+                    if [[ ! -f "$project_name/.pre-commit-config.yaml" ]]; then
+                      echo "❌ .pre-commit-config.yaml missing"
+                      exit 1
+                    fi
+                  fi
 
-              echo "✓ $project_type generation successful"
-              rm -rf "$project_name"
+                  if [[ "$github_actions" == "yes" ]]; then
+                    if [[ ! -f "$project_name/.github/workflows/pull_request.yml" ]]; then
+                      echo "❌ .github/workflows/pull_request.yml missing"
+                      exit 1
+                    fi
+                  fi
+
+                  if [[ "$use_otel" == "yes" ]]; then
+                    if [[ ! -d "$project_name/app/observability" ]]; then
+                      echo "❌ app/observability should exist when observability is enabled"
+                      exit 1
+                    fi
+                    if [[ "$generate_local_stack" == "yes" && ! -d "$project_name/local_telemetry" ]]; then
+                      echo "❌ local_telemetry should exist when local stack is enabled"
+                      exit 1
+                    fi
+                  else
+                    if [[ -d "$project_name/app/observability" ]]; then
+                      echo "❌ app/observability should not exist when observability is disabled"
+                      exit 1
+                    fi
+                    if [[ -d "$project_name/local_telemetry" ]]; then
+                      echo "❌ local_telemetry should not exist when observability is disabled"
+                      exit 1
+                    fi
+                  fi
+
+                  echo "✓ $project_type generation successful (observability=$use_otel)"
+                  rm -rf "$project_name"
+                done
+              done
             done
           done
-        done
 
-        echo "All template combinations generated successfully!"
+          echo "All template combinations generated successfully!"
