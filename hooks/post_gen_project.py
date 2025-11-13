@@ -8,6 +8,36 @@ import sys
 from pathlib import Path
 
 
+def validate_observability_config():
+    """Validate that observability configuration is consistent."""
+    use_otel_observability = "{{ cookiecutter.use_otel_observability }}"
+    generate_local_otel_stack = "{{ cookiecutter.generate_local_otel_stack }}"
+
+    if generate_local_otel_stack == "yes" and use_otel_observability != "yes":
+        print("\n❌ ERROR: Invalid configuration!")
+        print("   'generate_local_otel_stack' cannot be 'yes' when 'use_otel_observability' is 'no'.")
+        print("   The local telemetry stack requires observability to be enabled.")
+        print("   Please regenerate the project with 'use_otel_observability=yes' or 'generate_local_otel_stack=no'.\n")
+
+        # Clean up the generated project directory
+        project_dir = Path.cwd()  # Current directory (the generated project)
+        parent_dir = project_dir.parent  # Where cookiecutter was originally run
+        project_name = project_dir.name
+
+        print(f"🧹 Cleaning up generated project directory '{project_name}'...")
+        try:
+            # Change to parent directory before removing
+            os.chdir(parent_dir)
+            if project_dir.exists():
+                shutil.rmtree(project_dir)
+                print(f"✓ Removed '{project_name}' directory")
+        except Exception as e:
+            print(f"⚠️  Warning: Could not remove generated directory: {e}")
+            print(f"   Please manually remove '{project_dir}' if needed.")
+
+        sys.exit(1)
+
+
 def extract_to_current_directory():
     """Extract template content to current directory if requested."""
     extract_to_current = "{{ cookiecutter.extract_to_current_dir }}"
@@ -65,9 +95,47 @@ def remove_empty_files():
     """Remove files that were conditionally empty."""
     project_root = Path.cwd()
     project_type = "{{ cookiecutter.project_type }}"
+    use_otel_observability = "{{ cookiecutter.use_otel_observability }}"
+    generate_local_otel_stack = "{{ cookiecutter.generate_local_otel_stack }}"
 
-    # Remove docker-compose.yaml if not a database project
-    if project_type not in ["fastapi_db", "cli_db"]:
+    # Remove observability directories if observability is disabled
+    if use_otel_observability != "yes":
+        observability_paths = [
+            project_root / "app" / "observability",
+            project_root / "tests" / "unit" / "observability",
+        ]
+        for path in observability_paths:
+            if path.exists():
+                try:
+                    shutil.rmtree(path)
+                    print(f"Removed {path.relative_to(project_root)} (observability is disabled)")
+                except Exception as e:
+                    print(f"Warning: Could not remove {path}: {e}")
+
+        # Remove observability-related files
+        observability_files = [
+            project_root / "tests" / "unit" / "test_config_validators.py",
+        ]
+        for file_path in observability_files:
+            if file_path.exists():
+                try:
+                    file_path.unlink()
+                    print(f"Removed {file_path.relative_to(project_root)} (observability is disabled)")
+                except Exception as e:
+                    print(f"Warning: Could not remove {file_path}: {e}")
+
+    # Remove local telemetry stack if not using it
+    if generate_local_otel_stack != "yes":
+        local_telemetry_path = project_root / "local_telemetry"
+        if local_telemetry_path.exists():
+            try:
+                shutil.rmtree(local_telemetry_path)
+                print(f"Removed {local_telemetry_path.relative_to(project_root)} (local telemetry stack is disabled)")
+            except Exception as e:
+                print(f"Warning: Could not remove {local_telemetry_path}: {e}")
+
+    # Remove docker-compose.yaml if not a database project and no local telemetry stack
+    if project_type not in ["fastapi_db", "cli_db"] and generate_local_otel_stack != "yes":
         docker_compose_path = project_root / "docker-compose.yaml"
         if docker_compose_path.exists():
             docker_compose_path.unlink()
@@ -92,7 +160,6 @@ def remove_empty_files():
             path = project_root / path_str
             if path.exists():
                 if path.is_dir():
-                    import shutil
                     shutil.rmtree(path)
                     print(f"Removed directory: {path_str}")
                 else:
@@ -100,23 +167,30 @@ def remove_empty_files():
                     print(f"Removed file: {path_str}")
 
     # For FastAPI DB, remove unit tests folder (only CLI should have it)
-    if project_type == "fastapi_db":
+    # but keep tests/unit if observability is enabled (contains observability tests)
+    if project_type == "fastapi_db" and use_otel_observability != "yes":
         db_cleanup_paths = [
-            "tests/unit",  # Remove unit tests folder for fastapi_db
+            "tests/unit",  # Remove unit tests folder for fastapi_db (unless observability enabled)
         ]
 
         for path_str in db_cleanup_paths:
             path = project_root / path_str
             if path.exists():
                 if path.is_dir():
-                    import shutil
                     shutil.rmtree(path)
                     print(f"Removed directory: {path_str}")
                 else:
                     path.unlink()
                     print(f"Removed file: {path_str}")
+    elif project_type == "fastapi_db" and use_otel_observability == "yes":
+        # For fastapi_db with observability, only remove test_dummy.py
+        dummy_test_path = project_root / "tests/unit/test_dummy.py"
+        if dummy_test_path.exists():
+            dummy_test_path.unlink()
+            print("Removed tests/unit/test_dummy.py (not needed with observability tests)")
 
     # For FastAPI Slim, remove examples API but keep health_checks
+    # Keep tests/unit if observability is enabled
     if project_type == "fastapi_slim":
         slim_cleanup_paths = [
             "app/api/examples",
@@ -127,19 +201,26 @@ def remove_empty_files():
             "app/core/exception_handlers.py",
             "tests/api/test_example.py",
             "tests/factories.py",
-            "tests/unit",  # Remove unit tests folder for fastapi_slim
         ]
+        if use_otel_observability != "yes":
+            slim_cleanup_paths.append("tests/unit")  # Only remove if no observability
 
         for path_str in slim_cleanup_paths:
             path = project_root / path_str
             if path.exists():
                 if path.is_dir():
-                    import shutil
                     shutil.rmtree(path)
                     print(f"Removed directory: {path_str}")
                 else:
                     path.unlink()
                     print(f"Removed file: {path_str}")
+
+        # For fastapi_slim with observability, remove test_dummy.py but keep observability tests
+        if use_otel_observability == "yes":
+            dummy_test_path = project_root / "tests/unit/test_dummy.py"
+            if dummy_test_path.exists():
+                dummy_test_path.unlink()
+                print("Removed tests/unit/test_dummy.py (not needed with observability tests)")
 
     # For CLI DB, remove FastAPI-specific files but keep database files
     if project_type == "cli_db":
@@ -155,24 +236,23 @@ def remove_empty_files():
             path = project_root / path_str
             if path.exists():
                 if path.is_dir():
-                    import shutil
                     shutil.rmtree(path)
                     print(f"Removed directory: {path_str}")
                 else:
                     path.unlink()
                     print(f"Removed file: {path_str}")
 
-    # List of conditional files that might be empty
-    conditional_files = [
-        ".pre-commit-config.yaml",
-        ".github/workflows/ci.yml",
-    ]
+    # Remove .pre-commit-config.yaml if it's empty (when use_pre_commit == "no")
+    pre_commit_path = project_root / ".pre-commit-config.yaml"
+    if pre_commit_path.exists() and pre_commit_path.stat().st_size == 0:
+        pre_commit_path.unlink()
+        print("Removed empty .pre-commit-config.yaml")
 
-    for file_path in conditional_files:
-        full_path = project_root / file_path
-        if full_path.exists() and full_path.stat().st_size == 0:
-            full_path.unlink()
-            print(f"Removed empty file: {file_path}")
+    # Remove .github/workflows/ci.yml if it's empty
+    ci_workflow_path = project_root / ".github/workflows/ci.yml"
+    if ci_workflow_path.exists() and ci_workflow_path.stat().st_size == 0:
+        ci_workflow_path.unlink()
+        print("Removed empty .github/workflows/ci.yml")
 
     # Remove empty directories
     for dir_path in [".github/workflows", ".github"]:
@@ -180,6 +260,7 @@ def remove_empty_files():
         if full_path.exists() and full_path.is_dir() and not any(full_path.iterdir()):
             full_path.rmdir()
             print(f"Removed empty directory: {dir_path}")
+
 
 
 def initialize_git():
@@ -380,7 +461,10 @@ def main():
     """Main post-generation script."""
     print("\n🔧 Running post-generation tasks...")
 
-    # Extract to current directory if requested (must be first)
+    # Validate observability configuration (must be first)
+    validate_observability_config()
+
+    # Extract to current directory if requested
     extract_to_current_directory()
 
     # Clean up conditional empty files

@@ -1,0 +1,28 @@
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+exporters:
+  otlphttp:
+    # export to Tempo via OTLP HTTP within the compose network
+    endpoint: http://{{ cookiecutter.project_name.lower() }}-tempo:4318
+    compression: gzip
+  debug:
+    verbosity: normal
+
+processors:
+  batch: { }
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ otlphttp, debug ]
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888
+{%- endif %}

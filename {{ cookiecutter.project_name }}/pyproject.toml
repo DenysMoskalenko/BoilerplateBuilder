@@ -32,6 +32,22 @@ dependencies = [
     "pydantic-settings>=2.12.0",
     "pydantic[email]>=2.12.4",
 {%- endif %}
+{%- if cookiecutter.use_otel_observability == "yes" %}
+    # Observability
+    "opentelemetry-sdk>=1.38.0",
+    "opentelemetry-exporter-otlp>=1.38.0",
+    "opentelemetry-instrumentation-logging>=0.59b0",
+    "opentelemetry-semantic-conventions>=0.59b0",
+    "prometheus-client>=0.23.1",
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+    "opentelemetry-instrumentation-fastapi>=0.59b0",
+    "opentelemetry-exporter-prometheus>=0.59b0",
+    "prometheus-fastapi-instrumentator>=7.1.0",
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+    "opentelemetry-instrumentation-sqlalchemy>=0.59b0",
+{%- endif %}
+{%- endif %}
 ]
 
 [dependency-groups]
@@ -54,10 +70,12 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
-#filterwarnings = [
-#    "ignore::DeprecationWarning:passlib",
-#    "ignore::DeprecationWarning:jose"
-#]
+filterwarnings = [
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+    "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers.core.waiting_utils",
+    "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers.postgres",
+{%- endif %}
+]
 
 [tool.ruff]
 line-length = 120

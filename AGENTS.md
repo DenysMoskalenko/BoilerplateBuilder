@@ -24,6 +24,7 @@
 - Framework: `pytest`. Layout: `tests/unit/` (unit), `tests/api/` (FastAPI), DB tests use testcontainers.
 - Run locally: `make test` or `pytest -v`; use `make test-coverage` to review coverage.
 - For template changes, generate at least two project types and run the full lint/test suite on each.
+- When working on observability/local telemetry features, template verification must cover every `project_type` combined with the four `use_otel_observability`/`generate_local_otel_stack` answer pairs (yes/yes, yes/no, no/yes which must fail early, no/no) to ensure both positive and negative paths stay healthy.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits where possible: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:` (matches repo history).

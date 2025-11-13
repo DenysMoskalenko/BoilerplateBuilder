@@ -29,5 +29,13 @@
     "initialize_git": [
         "yes",
         "no"
+    ],
+    "use_otel_observability": [
+        "no",
+        "yes"
+    ],
+    "generate_local_otel_stack": [
+        "no",
+        "yes"
     ]
 }

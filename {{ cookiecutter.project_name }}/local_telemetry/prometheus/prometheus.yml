@@ -1,0 +1,17 @@
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+  - job_name: '{{ cookiecutter.project_name.lower() }}-app'
+    static_configs:
+      - targets: [ '{{ cookiecutter.project_name.lower() }}-app:8000' ]
+    metrics_path: /metrics/
+{%- endif %}
+
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: [ '{{ cookiecutter.project_name.lower() }}-otel-collector:8888' ]
+{%- endif %}

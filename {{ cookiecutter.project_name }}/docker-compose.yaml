@@ -1,7 +1,118 @@
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
-version: '3.8'
-
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] or cookiecutter.generate_local_otel_stack == "yes" %}
 services:
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+  {{ cookiecutter.project_name.lower() }}-app:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - OBSERVABILITY_OTLP_GRPC_ENDPOINT=grpc://{{ cookiecutter.project_name.lower() }}-otel-collector:4317
+      - OBSERVABILITY_LOGS_IN_JSON=True
+      - OBSERVABILITY_TRACING_ENABLED=True
+      - OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=100
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+    ports:
+      - "8000:8000"
+{%- endif %}
+    depends_on:
+      - {{ cookiecutter.project_name.lower() }}-otel-collector
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+      - {{ cookiecutter.project_name.lower() }}-db
+{%- endif %}
+    networks:
+      - observability
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+      - default
+{%- endif %}
+
+  {{ cookiecutter.project_name.lower() }}-otel-collector:
+    image: otel/opentelemetry-collector:0.104.0
+    restart: always
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "8888:8888"   # Collector metrics
+    volumes:
+      - ./local_telemetry/otel-collector/config.yaml:/etc/otel-collector-config.yaml:ro
+    depends_on:
+      - {{ cookiecutter.project_name.lower() }}-tempo
+    links:
+      - {{ cookiecutter.project_name.lower() }}-tempo:{{ cookiecutter.project_name.lower() }}-tempo
+      - {{ cookiecutter.project_name.lower() }}-tempo:tempo
+    networks:
+      - observability
+
+  {{ cookiecutter.project_name.lower() }}-tempo:
+    image: grafana/tempo:2.6.1
+    restart: always
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    ports:
+      - "3200:3200"   # Tempo HTTP (query/frontend)
+    volumes:
+      - ./local_telemetry/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - {{ cookiecutter.project_name.lower() }}-tempo-data:/var/tempo
+    networks:
+      - observability
+
+  {{ cookiecutter.project_name.lower() }}-prometheus:
+    image: prom/prometheus:v2.55.0
+    restart: always
+    command: [ "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=2d" ]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./local_telemetry/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - {{ cookiecutter.project_name.lower() }}-prometheus-data:/prometheus
+    depends_on:
+      - {{ cookiecutter.project_name.lower() }}-app
+    networks:
+      - observability
+
+  {{ cookiecutter.project_name.lower() }}-grafana:
+    image: grafana/grafana:10.4.3
+    restart: always
+    environment:
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_FEATURE_TOGGLES_ENABLE=tempoApmTable tempoServiceGraph
+    ports:
+      - "3000:3000"
+    volumes:
+      - {{ cookiecutter.project_name.lower() }}-grafana-data:/var/lib/grafana
+      - ./local_telemetry/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./local_telemetry/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - {{ cookiecutter.project_name.lower() }}-prometheus
+      - {{ cookiecutter.project_name.lower() }}-tempo
+    networks:
+      - observability
+
+  {{ cookiecutter.project_name.lower() }}-loki:
+    image: grafana/loki:2.9.8
+    restart: always
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./local_telemetry/loki/config.yaml:/etc/loki/local-config.yaml:ro
+      - {{ cookiecutter.project_name.lower() }}-loki-data:/loki
+    networks:
+      - observability
+
+  {{ cookiecutter.project_name.lower() }}-promtail:
+    image: grafana/promtail:2.9.8
+    restart: always
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./local_telemetry/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - observability
+
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
   {{ cookiecutter.project_name.lower() }}-db:
     container_name: {{ cookiecutter.project_name.lower() }}_db
     image: postgres:15-alpine
@@ -19,8 +130,27 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+{%- endif %}
+
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+
+networks:
+  observability:
+    name: observability
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+  default:
+{%- endif %}
+{%- endif %}
 
 volumes:
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
   postgres_data:
     name: {{ cookiecutter.project_name.lower() }}_postgres_data
+{%- endif %}
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+  {{ cookiecutter.project_name.lower() }}-tempo-data: { }
+  {{ cookiecutter.project_name.lower() }}-prometheus-data: { }
+  {{ cookiecutter.project_name.lower() }}-grafana-data: { }
+  {{ cookiecutter.project_name.lower() }}-loki-data: { }
+{%- endif %}
 {%- endif %}

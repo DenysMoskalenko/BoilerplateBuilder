@@ -24,6 +24,11 @@ def pytest_configure(config: pytest.Config) -> None:
     file after command line options have been parsed.
     """
     os.environ['MIGRATION_ON_STARTUP'] = 'False'
+{%- if cookiecutter.use_otel_observability == "yes" %}
+    os.environ['OBSERVABILITY_TRACING_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_METRICS_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_LOGS_IN_JSON'] = 'False'
+{%- endif %}
 
 
 @pytest.fixture(scope='session')
@@ -106,6 +111,7 @@ def event_loop_policy(request):
     return request.param
 {% elif cookiecutter.project_type == "fastapi_slim" -%}
 from asyncio import DefaultEventLoopPolicy
+import os
 from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI
@@ -123,6 +129,11 @@ def pytest_configure(config: pytest.Config) -> None:
     This hook is called for every plugin and initial conftest
     file after command line options have been parsed.
     """
+{%- if cookiecutter.use_otel_observability == "yes" %}
+    os.environ['OBSERVABILITY_TRACING_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_METRICS_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_LOGS_IN_JSON'] = 'False'
+{%- endif %}
 
 
 @pytest.fixture(scope='session')
@@ -165,6 +176,11 @@ def pytest_configure(config: pytest.Config) -> None:
     file after command line options have been parsed.
     """
     os.environ['MIGRATION_ON_STARTUP'] = 'False'
+{%- if cookiecutter.use_otel_observability == "yes" %}
+    os.environ['OBSERVABILITY_TRACING_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_METRICS_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_LOGS_IN_JSON'] = 'False'
+{%- endif %}
 
 
 @pytest.fixture(scope='function')
@@ -227,6 +243,7 @@ def event_loop_policy(request):
     return request.param
 {% else -%}
 from asyncio import DefaultEventLoopPolicy
+import os
 
 import pytest
 
@@ -237,6 +254,11 @@ def pytest_configure(config: pytest.Config) -> None:
     This hook is called for every plugin and initial conftest
     file after command line options have been parsed.
     """
+{%- if cookiecutter.use_otel_observability == "yes" %}
+    os.environ['OBSERVABILITY_TRACING_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_METRICS_ENABLED'] = 'False'
+    os.environ['OBSERVABILITY_LOGS_IN_JSON'] = 'False'
+{%- endif %}
 
 
 @pytest.fixture(scope='session', params=(DefaultEventLoopPolicy(),))
