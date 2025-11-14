@@ -10,6 +10,7 @@ class ExampleCreate(BaseModel):
 
     @field_validator('birthday')
     def validate_start_date(cls, birthday: date | None) -> date | None:
+        del cls
         if birthday is None:
             return birthday
         if birthday < datetime.now(UTC).date():

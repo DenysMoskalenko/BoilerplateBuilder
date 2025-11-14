@@ -4,9 +4,9 @@ from .decorators import increment_after, track_inflight
 
 from .enums import Section
 
-__all__ = ['track_inflight', 'increment_after', 'Section']
+__all__ = ['Section', 'increment_after', 'track_inflight']
 {%- else %}
 
-__all__ = ['track_inflight', 'increment_after']
+__all__ = ['increment_after', 'track_inflight']
 {%- endif %}
 {%- endif %}

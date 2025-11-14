@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 from pydantic import BaseModel
-from uvicorn.config import LOGGING_CONFIG
 
 from app.core.config import get_settings
 
