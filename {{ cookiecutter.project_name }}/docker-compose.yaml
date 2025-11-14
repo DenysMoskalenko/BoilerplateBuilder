@@ -11,6 +11,10 @@ services:
       - OBSERVABILITY_LOGS_IN_JSON=True
       - OBSERVABILITY_TRACING_ENABLED=True
       - OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=100
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+      - DATABASE_URL=postgresql+psycopg://{{ cookiecutter.project_name.lower() }}_user:{{ cookiecutter.project_name.lower() }}_password@{{ cookiecutter.project_name.lower() }}-db:5432/{{ cookiecutter.project_name.lower() }}_db
+      - MIGRATION_ON_STARTUP=True
+{%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     ports:
       - "8000:8000"
@@ -112,6 +116,7 @@ services:
       - observability
 
 {%- endif %}
+
 {%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
   {{ cookiecutter.project_name.lower() }}-db:
     container_name: {{ cookiecutter.project_name.lower() }}_db

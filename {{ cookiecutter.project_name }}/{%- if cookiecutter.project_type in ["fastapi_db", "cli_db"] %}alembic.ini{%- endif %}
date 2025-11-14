@@ -63,6 +63,9 @@ compare_server_default = true
 # Additional columns to check (if needed)
 # compare_check_constraints = true
 
+# Keep explicit DB URI
+sqlalchemy.url = postgresql+psycopg://{{ cookiecutter.project_name.lower() }}_user:{{ cookiecutter.project_name.lower() }}_password@localhost:5432/{{ cookiecutter.project_name.lower() }}_db
+
 [post_write_hooks]
 # post_write_hooks defines scripts or Python functions that are run
 # on newly generated revision scripts.  See the documentation for further
