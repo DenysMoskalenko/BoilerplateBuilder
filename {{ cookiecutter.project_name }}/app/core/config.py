@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     @field_validator('OBSERVABILITY_OTLP_GRPC_ENDPOINT')
     @classmethod
     def _validate_otlp_grpc_endpoint(cls, v: str | None) -> str | None:
+        del cls
         """Validate OTLP gRPC endpoint format."""
         if not v:
             return v

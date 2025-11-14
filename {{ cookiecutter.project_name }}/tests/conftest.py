@@ -17,7 +17,7 @@ from tests.dependencies import override_app_test_dependencies, override_dependen
 TEST_HOST = 'http://test'
 
 
-def pytest_configure(config: pytest.Config) -> None:
+def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     """
     Allows plugins and conftest files to perform initial configuration.
     This hook is called for every plugin and initial conftest
@@ -123,7 +123,7 @@ from tests.dependencies import override_app_test_dependencies
 TEST_HOST = 'http://test'
 
 
-def pytest_configure(config: pytest.Config) -> None:
+def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     """
     Allows plugins and conftest files to perform initial configuration.
     This hook is called for every plugin and initial conftest
@@ -169,7 +169,7 @@ from testcontainers.postgres import PostgresContainer
 from app.core.config import get_settings
 
 
-def pytest_configure(config: pytest.Config) -> None:
+def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     """
     Allows plugins and conftest files to perform initial configuration.
     This hook is called for every plugin and initial conftest
@@ -248,7 +248,7 @@ import os
 import pytest
 
 
-def pytest_configure(config: pytest.Config) -> None:
+def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     """
     Allows plugins and conftest files to perform initial configuration.
     This hook is called for every plugin and initial conftest

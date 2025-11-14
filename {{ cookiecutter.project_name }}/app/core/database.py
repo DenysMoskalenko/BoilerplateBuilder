@@ -56,9 +56,9 @@ async def open_db_session() -> AsyncGenerator[AsyncSession, Any]:
     session: AsyncSession = factory()
     try:
         yield session
-    except Exception as e:
+    except Exception:
         await session.rollback()
-        raise e
+        raise
     else:
         await session.commit()
     finally:

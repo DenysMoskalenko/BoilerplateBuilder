@@ -1,9 +1,7 @@
 {% if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] -%}
 import logging
-from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 {%- if cookiecutter.project_type == "fastapi_db" %}

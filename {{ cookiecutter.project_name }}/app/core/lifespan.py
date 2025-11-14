@@ -10,7 +10,7 @@ from app.core.database import get_alembic_config
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
     settings = get_settings()
     await startup(settings)
     yield
@@ -34,7 +34,7 @@ from app.core.config import get_settings, Settings
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, Any]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
     settings = get_settings()
     await startup(settings)
     yield

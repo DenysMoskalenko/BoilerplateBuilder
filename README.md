@@ -430,6 +430,22 @@ your-project/
 └── .env                         # Environment variables
 ```
 
+## ✅ Template Smoke Tests
+
+Validate every project type (including lint + test runs) after template changes with the helper script:
+
+```bash
+python -m scripts.template_smoke_test
+```
+
+Useful flags:
+
+- `--project-types fastapi_db cli_db` – run a subset.
+- `--use-otel yes` – exercise the observability code paths (required when pairing with `--local-otel-stack yes`).
+- `--keep-builds` – keep the generated projects for inspection; by default they are cleaned up.
+
+The script generates each requested project without initializing git, runs `uv sync`, and then executes `uv run make lint` and `uv run make test` inside the project. Builds land under `.template-builds/<timestamp>/…`; pass `--run-id=my-run` to control the folder name.
+
 ## 🤝 Contributing
 
 1. Fork the repository
