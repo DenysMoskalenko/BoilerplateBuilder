@@ -29,13 +29,20 @@ FROM python:{{ cookiecutter.python_version }}-slim AS runner
 
 WORKDIR /app
 
-# Copy the application from the builder
+# Create dedicated non-root user for the runtime image
+RUN addgroup --system app \
+    && adduser --system --ingroup app --home /app app
+
+# Copy the application from the builder with proper ownership
 COPY --from=builder --chown=app:app /app /app
 
 # Environment variables
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+
+# Drop root privileges for the app process
+USER app
 
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 ENTRYPOINT ["python", "-m", "app.main"]
