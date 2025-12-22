@@ -73,12 +73,6 @@ class Settings(BaseSettings):
                 'Tracing is enabled (OBSERVABILITY_TRACING_ENABLED=True), but no '
                 'OBSERVABILITY_OTLP_GRPC_ENDPOINT is configured. Traces cannot be exported.'
             )
-        if self.OBSERVABILITY_TRACING_ENABLED and not self.OBSERVABILITY_LOGS_IN_JSON:
-            raise ValueError(
-                'Tracing is enabled (OBSERVABILITY_TRACING_ENABLED=True), but '
-                'OBSERVABILITY_LOGS_IN_JSON is disabled. Traces cannot be exported due to wrong '
-                'logging configuration. Please set OBSERVABILITY_LOGS_IN_JSON=True.'
-            )
         return self
 {%- endif %}
 

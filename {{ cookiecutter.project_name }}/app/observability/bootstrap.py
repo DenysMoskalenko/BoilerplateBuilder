@@ -17,18 +17,14 @@ from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 from opentelemetry.semconv.attributes import service_attributes
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 from prometheus_client import make_asgi_app
-from prometheus_fastapi_instrumentator import PrometheusFastApiInstrumentator
-from prometheus_fastapi_instrumentator.metrics import default, latency
-{%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 {%- endif %}
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
 from app.core.config import Settings
-from app.observability.logging_config import setup_json_logging
 
 logger = logging.getLogger(__name__)
 
@@ -45,42 +41,24 @@ def setup_observability(settings: Settings) -> None:
     """Set up observability stack with logging, tracing, and metrics."""
     logger.info('Setting up observability...')
 
-    if settings.OBSERVABILITY_LOGS_IN_JSON:
-        setup_json_logging(settings.LOG_LEVEL)
-
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-    _setup_tracing(app=app, settings=settings)
+    _setup_tracing(settings=settings)
     _setup_metrics(app=app, settings=settings)
+    _setup_instrumentors(app=app)
 {%- else %}
     _setup_tracing(settings=settings)
     _setup_metrics(settings=settings)
+    _setup_instrumentors()
 {%- endif %}
 
     logger.info('Observability setup completed.')
 
 
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-
-
-def _setup_tracing(app: FastAPI, settings: Settings) -> None:
-{%- else %}
-
-
 def _setup_tracing(settings: Settings) -> None:
-{%- endif %}
     """Configure distributed tracing with OpenTelemetry."""
     if not settings.OBSERVABILITY_TRACING_ENABLED:
         logger.info('Tracing is disabled. Skipping setup.')
         return
-
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-    FastAPIInstrumentor().instrument_app(
-        app, exclude_spans=['send', 'receive'], excluded_urls=r'^/metrics/?$,^/health-check/?$'
-    )
-{%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
-    SQLAlchemyInstrumentor().instrument()
-{%- endif %}
 
     endpoint = settings.OBSERVABILITY_OTLP_GRPC_ENDPOINT
     resource = _create_resource(settings=settings)
@@ -91,8 +69,6 @@ def _setup_tracing(settings: Settings) -> None:
     trace.set_tracer_provider(tracer_provider=provider)
 
     logger.info(f'Tracing enabled and exporting to {endpoint}')
-
-
 
 
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
@@ -118,19 +94,30 @@ def _setup_metrics(settings: Settings) -> None:
     metrics.set_meter_provider(meter_provider=provider)
 
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-    instrumentator = PrometheusFastApiInstrumentator(
-        should_group_status_codes=True,
-        should_ignore_untemplated=True,
-    )
-    instrumentator.add(default())
-    instrumentator.add(latency())
-    instrumentator.instrument(app)
-
     app.mount('/metrics/', make_asgi_app())
-    logger.info('Prometheus metrics available at "/metrics/"')
-{%- else %}
-    logger.info('Metrics collection enabled.')
+    logger.info('Metrics available at "/metrics/"')
 {%- endif %}
+    logger.info('Metrics collection enabled.')
+
+
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+
+
+def _setup_instrumentors(app: FastAPI | None) -> None:
+{%- else %}
+
+
+def _setup_instrumentors() -> None:
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
+    FastAPIInstrumentor().instrument_app(
+        app, exclude_spans=['send', 'receive'], excluded_urls='/health-check,/metrics/'
+    )
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+    SQLAlchemyInstrumentor().instrument()
+{%- endif %}
+    LoggingInstrumentor().instrument()
 
 
 def _create_resource(settings: Settings) -> Resource:

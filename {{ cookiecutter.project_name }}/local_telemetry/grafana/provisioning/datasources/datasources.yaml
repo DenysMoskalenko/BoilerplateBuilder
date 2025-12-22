@@ -7,7 +7,7 @@ datasources:
     access: proxy
     url: http://{{ cookiecutter.project_name.lower() }}-prometheus:9090
     isDefault: true
-    uid: prom
+    uid: prometheus
     jsonData:
       httpMethod: POST
 
@@ -32,7 +32,7 @@ datasources:
         # to keep the query efficient and independent of span IDs in logs.
         query: '{compose_service=~".+"} |= "$traceId"'
       tracesToMetrics:
-        datasourceUid: prom
+        datasourceUid: prometheus
       serviceMap: true
 
   - name: Loki
