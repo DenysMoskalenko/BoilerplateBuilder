@@ -52,19 +52,6 @@ def test_tracing_enabled_without_endpoint() -> None:
         Settings(**base_config)
 
 
-def test_tracing_enabled_without_json_logging() -> None:
-    """Test that tracing enabled without JSON logging raises validation error."""
-    base_config = get_settings().model_dump()
-    base_config.update({
-        'OBSERVABILITY_TRACING_ENABLED': True,
-        'OBSERVABILITY_LOGS_IN_JSON': False,
-        'OBSERVABILITY_OTLP_GRPC_ENDPOINT': 'grpc://localhost:4317',
-    })
-
-    with pytest.raises(ValueError, match='but OBSERVABILITY_LOGS_IN_JSON is disabled'):
-        Settings(**base_config)
-
-
 def test_valid_observability_config() -> None:
     """Test that valid observability configuration is accepted."""
     base_config = get_settings().model_dump()

@@ -26,10 +26,11 @@
     {
       "type": "stat",
       "title": "Requests/sec",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 6, "x": 0, "y": 1},
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total[1m]))",
+          "expr": "sum(rate(http_server_duration_milliseconds_count[1m]))",
           "legendFormat": "all"
         }
       ]
@@ -37,22 +38,24 @@
     {
       "type": "timeseries",
       "title": "Requests by Status",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 6, "x": 6, "y": 1},
       "targets": [
         {
-          "expr": "sum by (status)(rate(http_requests_total[1m]))",
-          "legendFormat": "{{status}}"
+          "expr": "sum by (http_status_code)(rate(http_server_duration_milliseconds_count[1m]))",
+          "legendFormat": "{{http_status_code}}"
         }
       ]
     },
     {
       "type": "timeseries",
       "title": "Requests by Route",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 1},
       "targets": [
         {
-          "expr": "sum by (handler)(round(increase(http_requests_total{handler!~\"/metrics|/health-check\"}[1m])))",
-          "legendFormat": "{{handler}}"
+          "expr": "sum by (http_target)(round(increase(http_server_duration_milliseconds_count{http_target!=\"\"}[1m])))",
+          "legendFormat": "{{http_target}}"
         }
       ]
     },{% endraw %}
@@ -66,6 +69,7 @@
     {
       "type": "timeseries",
       "title": "Example Operations (selected range)",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 12, "x": 0, "y": 8},
       "targets": [
         {
@@ -77,6 +81,7 @@
     {
       "type": "timeseries",
       "title": "Inflight Operations",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 8},
       "targets": [
         {
@@ -94,6 +99,7 @@
     {
       "type": "timeseries",
       "title": "Database Operations (selected range)",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 12, "x": 0, "y": 1},
       "targets": [
         {
@@ -105,6 +111,7 @@
     {
       "type": "timeseries",
       "title": "Inflight Database Operations",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 6, "w": 12, "x": 12, "y": 1},
       "targets": [
         {
@@ -151,8 +158,8 @@
         }
       ],
       "options": {
-        "showTime": true,
-        "showLabels": true,
+        "showTime": false,
+        "showLabels": false,
         "sortOrder": "Descending",
         "wrapLogMessage": false,
         "enableLogDetails": true,
