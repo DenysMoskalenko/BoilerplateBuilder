@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = '{{ cookiecutter.project_name }}'
     PROJECT_VERSION: str = '0.1.0'
     LOG_LEVEL: Literal['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'] = 'INFO'
+    ROOT_PATH: str = ''
 {%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
 
     DATABASE_URL: PostgresDsn

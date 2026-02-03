@@ -33,10 +33,10 @@ def create_app() -> FastAPI:
         format='[%(asctime)s] %(levelname)s %(name)s %(message)s',
     )
 {%- endif %}
-    _app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, lifespan=lifespan)
+    _app = FastAPI(
+        title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, lifespan=lifespan, root_path=settings.ROOT_PATH
+    )
 {%- if cookiecutter.project_type == "fastapi_db" %}
-    include_exception_handlers(_app)
-
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
     # Setup observability (logging, tracing, metrics)
@@ -48,6 +48,10 @@ def create_app() -> FastAPI:
     _app.include_router(health_checks_router)
 {%- else %}
     _app.include_router(health_checks_router)
+{%- endif %}
+{%- if cookiecutter.project_type == "fastapi_db" %}
+
+    include_exception_handlers(_app)  # Keep this at the end to ensure it wraps all middleware/routers (e.g. CORS).
 {%- endif %}
     return _app
 
