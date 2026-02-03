@@ -1,5 +1,6 @@
 from logging.config import fileConfig
 import os
+from typing import cast
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
@@ -34,7 +35,7 @@ target_metadata = Base.metadata
 
 def get_url() -> str:
     database_url = os.getenv('DATABASE_URL', config.get_main_option('sqlalchemy.url'))
-    return database_url
+    return cast(str, database_url)
 
 
 def run_migrations_offline() -> None:
@@ -68,7 +69,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    configuration = config.get_section(config.config_ini_section)
+    configuration = cast(dict[str, str], config.get_section(config.config_ini_section))
     configuration['sqlalchemy.url'] = get_url()
     connectable = engine_from_config(
         configuration,

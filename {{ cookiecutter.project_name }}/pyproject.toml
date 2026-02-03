@@ -53,6 +53,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff>=0.14.14",
+    "ty>=0.0.14",
     "prek>=0.3.1",
     "complexipy>=5.2.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
@@ -78,6 +79,9 @@ filterwarnings = [
     "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers.postgres",
 {%- endif %}
 ]
+
+[tool.ty.rules]
+unused-ignore-comment = "ignore"
 
 [tool.ruff]
 line-length = 120

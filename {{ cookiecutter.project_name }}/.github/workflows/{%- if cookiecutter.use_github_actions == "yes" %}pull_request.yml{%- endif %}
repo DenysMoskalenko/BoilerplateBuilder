@@ -22,6 +22,8 @@ jobs:
         run: echo "Cache was restored"
       - name: Run linter
         run: uv run ruff check
+      - name: Run typecheck
+        run: uv run ty check
 
   tests:
     needs: linter

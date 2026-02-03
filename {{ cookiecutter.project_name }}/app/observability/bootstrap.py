@@ -103,7 +103,7 @@ def _setup_metrics(settings: Settings) -> None:
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 
 
-def _setup_instrumentors(app: FastAPI | None) -> None:
+def _setup_instrumentors(app: FastAPI) -> None:
 {%- else %}
 
 

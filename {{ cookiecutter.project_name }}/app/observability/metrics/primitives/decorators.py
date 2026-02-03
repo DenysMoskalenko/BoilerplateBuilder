@@ -1,7 +1,7 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
 import asyncio
 from functools import wraps
-from typing import Any, Callable, ParamSpec, TypeVar
+from typing import Any, Awaitable, Callable, ParamSpec, TypeVar, cast, overload
 
 P = ParamSpec('P')
 T = TypeVar('T')
@@ -38,13 +38,33 @@ def increment_after(counter_or_child: Any, *, success_only: bool = True) -> Call
     return decorator
 
 
+@overload
+def _wrap_with_hooks(
+    func: Callable[P, Awaitable[T]],
+    *,
+    before: Callable[[], None] | None,
+    after: Callable[[], None] | None,
+    after_on_success_only: bool = False,
+) -> Callable[P, Awaitable[T]]: ...
+
+
+@overload
 def _wrap_with_hooks(
     func: Callable[P, T],
     *,
     before: Callable[[], None] | None,
     after: Callable[[], None] | None,
     after_on_success_only: bool = False,
-) -> Callable[P, T]:
+) -> Callable[P, T]: ...
+
+
+def _wrap_with_hooks(
+    func: Callable[P, T] | Callable[P, Awaitable[T]],
+    *,
+    before: Callable[[], None] | None,
+    after: Callable[[], None] | None,
+    after_on_success_only: bool = False,
+) -> Callable[P, Any]:
     """Return a wrapper that runs before()/after() around func, supports sync/async.
 
     If ``after_on_success_only`` is True, the ``after`` hook runs only when the
@@ -52,34 +72,37 @@ def _wrap_with_hooks(
     """
 
     if asyncio.iscoroutinefunction(func):
+        func_async = cast(Callable[P, Awaitable[T]], func)
 
         @wraps(func)
-        async def a_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:  # type: ignore[override]
+        async def a_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             if before:
                 before()
             _ok = False
             try:
-                result = await func(*args, **kwargs)  # type: ignore[misc]
+                result = await func_async(*args, **kwargs)
                 _ok = True
                 return result
             finally:
                 if after and (not after_on_success_only or _ok):
                     after()
 
-        return a_wrapper  # type: ignore[return-value]
+        return a_wrapper
+
+    func_sync = cast(Callable[P, T], func)
 
     @wraps(func)
-    def s_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:  # type: ignore[override]
+    def s_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         if before:
             before()
         _ok = False
         try:
-            result = func(*args, **kwargs)
+            result = func_sync(*args, **kwargs)
             _ok = True
             return result
         finally:
             if after and (not after_on_success_only or _ok):
                 after()
 
-    return s_wrapper  # type: ignore[return-value]
+    return s_wrapper
 {%- endif %}

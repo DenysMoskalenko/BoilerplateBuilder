@@ -76,6 +76,11 @@ jobs:
           uv run --active ruff check --fix .
           uv run --active ruff format --check .
 
+      - name: Run typecheck
+        working-directory: ./TestProject
+        run: |
+          uv run --active ty check
+
       - name: Run tests
         working-directory: ./TestProject
         run: |

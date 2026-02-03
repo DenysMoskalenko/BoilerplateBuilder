@@ -5,11 +5,17 @@ lint:
 lint-no-format:
 	ruff check
 
+typecheck:
+	ty check
+
 test:
 	pytest
 
 test-coverage:
 	pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=90
+
+check: lint typecheck test-coverage
+	@echo "✓ All checks passed"
 
 run:
 	python -m app.main
