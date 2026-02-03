@@ -13,13 +13,15 @@ support, Docker, testing, and CI/CD setup.
 
 ### Installation
 
+
+Install cookiecutter
 ```bash
-# Install cookiecutter
 pip install cookiecutter
 # or
 uv add cookiecutter
-
-# Generate a new project
+```
+Generate a new project
+```
 cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 ```
 
