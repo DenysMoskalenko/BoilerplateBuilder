@@ -28,7 +28,7 @@ class LogsJSONFormatter(logging.Formatter):
             span_id=self._clean_zero(getattr(record, 'otelSpanID', None)),
             message=record.getMessage(),
             stack_trace=self.formatException(record.exc_info) if record.exc_info else None,
-            exception_type=record.exc_info[0].__name__ if record.exc_info else None,
+            exception_type=record.exc_info[0].__name__ if (record.exc_info and record.exc_info[0]) else None,
         ).model_dump_json(exclude_none=True)
 
     @staticmethod

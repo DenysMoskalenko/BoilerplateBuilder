@@ -1,6 +1,6 @@
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable, cast
 
 from fastapi import FastAPI
 from starlette.routing import Mount
@@ -26,5 +26,6 @@ def override_dependency(app: FastAPI, dependency: Callable, override: Callable) 
     for route in app.router.routes:
         if isinstance(route, Mount):
             if hasattr(route.app, 'dependency_overrides'):
-                route.app.dependency_overrides[dependency] = override
+                app_with_overrides = cast(Any, route.app)
+                app_with_overrides.dependency_overrides[dependency] = override
 {%- endif %}

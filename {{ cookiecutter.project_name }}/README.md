@@ -21,7 +21,7 @@ After you installed all dependencies(including dev dependencies):
 
 1. Create `.pre-commit-config.yaml` file with your settings.
    We usually use [ruff-pre-commit](https://github.com/astral-sh/ruff-pre-commit)
-2. run `pre-commit install` to activate tour pre-commit hook
+2. run `prek install` to activate tour pre-commit hook
 
 ### Git setup
 
@@ -29,7 +29,8 @@ Before making any commits—ensure you are using correct work profile.
 
 1. Check you name/email by `git config user.name` and `git config user.email`
 2. Change name/email by `git config user.name "Your Fullname"`/`git config user.email "YourWorkEmail"`
-3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`
+3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`. Check
+   your keys by `gpg --list-secret-keys --keyid-format=long`
 4. Force Signing: always use `git commit -S` for explicit signing or let your IDE do the job)
 {%- elif cookiecutter.project_type == "fastapi_slim" %}
 # {{ cookiecutter.project_name }}
@@ -54,7 +55,7 @@ After you installed all dependencies(including dev dependencies):
 
 1. Create `.pre-commit-config.yaml` file with your settings.
    We usually use [ruff-pre-commit](https://github.com/astral-sh/ruff-pre-commit)
-2. run `pre-commit install` to activate tour pre-commit hook
+2. run `prek install` to activate tour pre-commit hook
 
 ### Git setup
 
@@ -62,7 +63,8 @@ Before making any commits—ensure you are using correct work profile.
 
 1. Check you name/email by `git config user.name` and `git config user.email`
 2. Change name/email by `git config user.name "Your Fullname"`/`git config user.email "YourWorkEmail"`
-3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`
+3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`. Check
+   your keys by `gpg --list-secret-keys --keyid-format=long`
 4. Force Signing: always use `git commit -S` for explicit signing or let your IDE do the job)
 {%- else %}
 # {{ cookiecutter.project_name }}
@@ -87,7 +89,7 @@ After you installed all dependencies(including dev dependencies):
 
 1. Create `.pre-commit-config.yaml` file with your settings.
    We usually use [ruff-pre-commit](https://github.com/astral-sh/ruff-pre-commit)
-2. run `pre-commit install` to activate tour pre-commit hook
+2. run `prek install` to activate tour pre-commit hook
 
 ### Git setup
 
@@ -95,6 +97,7 @@ Before making any commits—ensure you are using correct work profile.
 
 1. Check you name/email by `git config user.name` and `git config user.email`
 2. Change name/email by `git config user.name "Your Fullname"`/`git config user.email "YourWorkEmail"`
-3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`
+3. Configure Git for commit signing `git config user.signingkey YOUR_KEY_ID` and `git config commit.gpgsign true`. Check
+   your keys by `gpg --list-secret-keys --keyid-format=long`
 4. Force Signing: always use `git commit -S` for explicit signing or let your IDE do the job)
 {%- endif %}

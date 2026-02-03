@@ -13,7 +13,7 @@ PYTHON_VERSIONS = ('3.11', '3.12', '3.13')
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description='Generate each project type and run make lint/test inside the uv environment.',
+        description='Generate each project type and run make lint/typecheck/test inside the uv environment.',
     )
     parser.add_argument(
         '--project-types',
@@ -165,6 +165,9 @@ def main() -> None:
 
             print(f'\n=== Running lint for {project_name} ===')
             run_command(['uv', 'run', 'make', 'lint'], cwd=destination, env={'UV_CACHE_DIR': str(uv_cache_dir)})
+
+            print(f'\n=== Running typecheck for {project_name} ===')
+            run_command(['uv', 'run', 'make', 'typecheck'], cwd=destination, env={'UV_CACHE_DIR': str(uv_cache_dir)})
 
             print(f'\n=== Running tests for {project_name} ===')
             run_command(['uv', 'run', 'make', 'test'], cwd=destination, env={'UV_CACHE_DIR': str(uv_cache_dir)})

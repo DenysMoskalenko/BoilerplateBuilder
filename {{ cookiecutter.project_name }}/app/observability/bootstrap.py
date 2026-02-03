@@ -103,7 +103,7 @@ def _setup_metrics(settings: Settings) -> None:
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 
 
-def _setup_instrumentors(app: FastAPI | None) -> None:
+def _setup_instrumentors(app: FastAPI) -> None:
 {%- else %}
 
 
@@ -111,7 +111,7 @@ def _setup_instrumentors() -> None:
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     FastAPIInstrumentor().instrument_app(
-        app, exclude_spans=['send', 'receive'], excluded_urls='/health-check,/metrics/'
+        app, exclude_spans=['send', 'receive'], excluded_urls='/health/live,/health/ready,/metrics/'
     )
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}

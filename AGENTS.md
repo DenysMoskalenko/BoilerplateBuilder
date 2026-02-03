@@ -34,3 +34,4 @@
 - Do not render the template; edit sources under `{{ cookiecutter.project_name }}` and `hooks/` using placeholders.
 - Keep `hooks/post_gen_project.py` idempotent and cross-platform; use Python 3.11+ features and avoid breaking non-target project types.
 - Limit changes to the task; run `pre-commit run -a` before submitting.
+- All newly created files MUST be added to git to avoid losing them during review.
