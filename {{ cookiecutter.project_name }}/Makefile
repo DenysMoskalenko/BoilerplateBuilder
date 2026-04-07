@@ -1,39 +1,38 @@
 lint:
-	ruff format
-	ruff check --fix
+	uv run ruff format
+	uv run ruff check --fix
 
 lint-no-format:
-	ruff check
+	uv run ruff check
 
 typecheck:
-	ty check
+	uv run ty check
 
 test:
-	pytest
+	uv run pytest
 
 test-coverage:
-	pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=90
+	uv run pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=90
 
 check: lint typecheck test-coverage
 	@echo "✓ All checks passed"
 
 run:
-	python -m app.main
-
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+	uv run python -m app.main
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
 up-dependencies:
 	docker compose up
 
 migration:
-	alembic revision --autogenerate -m "$(MSG)"
+	uv run alembic revision --autogenerate -m "$(MSG)"
 
 migrate:
-	alembic upgrade head
+	uv run alembic upgrade head
 
 upgrade:
-	alembic upgrade +1
+	uv run alembic upgrade +1
 
 downgrade:
-	alembic downgrade -1
+	uv run alembic downgrade -1
 {%- endif %}

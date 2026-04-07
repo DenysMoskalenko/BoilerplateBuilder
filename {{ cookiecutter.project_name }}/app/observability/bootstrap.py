@@ -1,13 +1,9 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
 import logging
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 
 from fastapi import FastAPI
-{%- endif %}
 from opentelemetry import metrics, trace
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
-{%- endif %}
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
@@ -15,11 +11,9 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 from opentelemetry.semconv.attributes import service_attributes
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 from prometheus_client import make_asgi_app
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-{%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 {%- endif %}
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
@@ -29,27 +23,13 @@ from app.core.config import Settings
 logger = logging.getLogger(__name__)
 
 
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-
-
 def setup_observability(app: FastAPI, settings: Settings) -> None:
-{%- else %}
-
-
-def setup_observability(settings: Settings) -> None:
-{%- endif %}
     """Set up observability stack with logging, tracing, and metrics."""
     logger.info('Setting up observability...')
 
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     _setup_tracing(settings=settings)
     _setup_metrics(app=app, settings=settings)
     _setup_instrumentors(app=app)
-{%- else %}
-    _setup_tracing(settings=settings)
-    _setup_metrics(settings=settings)
-    _setup_instrumentors()
-{%- endif %}
 
     logger.info('Observability setup completed.')
 
@@ -71,50 +51,26 @@ def _setup_tracing(settings: Settings) -> None:
     logger.info(f'Tracing enabled and exporting to {endpoint}')
 
 
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-
-
 def _setup_metrics(app: FastAPI, settings: Settings) -> None:
-{%- else %}
-
-
-def _setup_metrics(settings: Settings) -> None:
-{%- endif %}
     """Configure Prometheus metrics collection."""
     if not settings.OBSERVABILITY_METRICS_ENABLED:
         logger.info('Metrics are disabled. Skipping setup.')
         return
 
     resource = _create_resource(settings=settings)
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     provider = MeterProvider(resource=resource, metric_readers=[PrometheusMetricReader()])
-{%- else %}
-    provider = MeterProvider(resource=resource)
-{%- endif %}
     metrics.set_meter_provider(meter_provider=provider)
 
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     app.mount('/metrics/', make_asgi_app())
     logger.info('Metrics available at "/metrics/"')
-{%- endif %}
     logger.info('Metrics collection enabled.')
 
 
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-
-
 def _setup_instrumentors(app: FastAPI) -> None:
-{%- else %}
-
-
-def _setup_instrumentors() -> None:
-{%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     FastAPIInstrumentor().instrument_app(
         app, exclude_spans=['send', 'receive'], excluded_urls='/health/live,/health/ready,/metrics/'
     )
-{%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     SQLAlchemyInstrumentor().instrument()
 {%- endif %}
     LoggingInstrumentor().instrument()

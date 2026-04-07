@@ -210,3 +210,7 @@ __marimo__/
 .vscode
 .idea
 .DS_Store
+
+vibe/
+.template-builds/
+review-builds/

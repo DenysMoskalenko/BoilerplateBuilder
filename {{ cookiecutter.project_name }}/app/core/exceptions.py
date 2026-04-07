@@ -1,4 +1,4 @@
-{%- if cookiecutter.project_type == "fastapi_db" %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 class BaseServiceError(Exception):
     pass
 
@@ -8,8 +8,5 @@ class NotFoundError(BaseServiceError):
 
 
 class AlreadyExistError(BaseServiceError):
-    pass
-{%- else %}
-class BaseServiceError(Exception):
     pass
 {%- endif %}

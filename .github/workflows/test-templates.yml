@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project_type: [ fastapi_db, fastapi_slim, cli_db, cli_slim ]
+        project_type: [ fastapi_db_agent, fastapi_db, fastapi_agent, fastapi_slim ]
         python_version: [ "3.11", "3.12", "3.13" ]
         observability_profile: [ disabled, enabled_with_stack ]
     env:
@@ -25,14 +25,10 @@ jobs:
           fetch-depth: 0
           clean: true
 
-      - name: Clear any cached files and verify template
+      - name: Clear any cached files
         run: |
-          # Force clear any potential caches
           rm -rf ~/.cache/cookiecutter
           rm -rf /tmp/cookiecutter*
-          echo "Current commit: $(git rev-parse HEAD)"
-          echo "Template database.py line 11:"
-          sed -n '11p' "{{ cookiecutter.project_name }}/app/core/database.py"
 
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v5
@@ -62,12 +58,13 @@ jobs:
       - name: Set up environment for generated project
         working-directory: ./TestProject
         run: |
-          # Create lock file and install dependencies
           uv lock
           uv sync
 
-          # Set up basic environment file
-          echo "PROJECT_NAME=TestProject" > .env
+          cp dist.env .env
+          if [[ "${{ matrix.project_type }}" == "fastapi_agent" || "${{ matrix.project_type }}" == "fastapi_db_agent" ]]; then
+            echo "OPENAI_API_KEY=test-key" >> .env
+          fi
 
       - name: Run linter
         working-directory: ./TestProject
@@ -110,8 +107,7 @@ jobs:
 
       - name: Test template generation with different options
         run: |
-          # Test all combinations of key options
-          for project_type in fastapi_db fastapi_slim cli_db cli_slim; do
+          for project_type in fastapi_db_agent fastapi_db fastapi_agent fastapi_slim; do
             for pre_commit in yes no; do
               for github_actions in yes no; do
                 for use_otel in yes no; do
@@ -152,13 +148,28 @@ jobs:
                   fi
 
                   # Verify conditional files
-                  if [[ "$project_type" == *"db"* ]]; then
+                  if [[ "$project_type" == "fastapi_db" || "$project_type" == "fastapi_db_agent" ]]; then
                     if [[ ! -f "$project_name/alembic.ini" ]]; then
                       echo "❌ alembic.ini missing for database project"
                       exit 1
                     fi
                     if [[ ! -f "$project_name/docker-compose.yaml" ]]; then
                       echo "❌ docker-compose.yaml missing for database project"
+                      exit 1
+                    fi
+                    if [[ ! -d "$project_name/app/infrastructure/db" ]]; then
+                      echo "❌ app/infrastructure/db missing for database project"
+                      exit 1
+                    fi
+                  fi
+
+                  if [[ "$project_type" == "fastapi_agent" || "$project_type" == "fastapi_db_agent" ]]; then
+                    if [[ ! -d "$project_name/app/agents" ]]; then
+                      echo "❌ app/agents missing for agent project"
+                      exit 1
+                    fi
+                    if [[ ! -d "$project_name/app/infrastructure/llms" ]]; then
+                      echo "❌ app/infrastructure/llms missing for agent project"
                       exit 1
                     fi
                   fi

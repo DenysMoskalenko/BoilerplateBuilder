@@ -1,5 +1,4 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
 from functools import lru_cache
 from typing import Any
 
@@ -64,23 +63,4 @@ def get_uvicorn_logging_config() -> tuple[dict[str, Any] | None, str]:
     }
 
     return config, settings.LOG_LEVEL.lower()
-{%- elif cookiecutter.project_type in ["cli_db", "cli_slim"] %}
-import logging
-import sys
-from typing import Literal
-
-from app.observability.logging.formatters import LogsJSONFormatter
-
-
-def setup_json_logging(level: Literal['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'] = 'INFO') -> None:
-    """Configure JSON logging with OTel correlation fields."""
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(LogsJSONFormatter())
-
-    root_logger = logging.getLogger()
-    if root_logger.hasHandlers():
-        root_logger.handlers.clear()
-    root_logger.addHandler(handler)
-    root_logger.setLevel(level)
-{%- endif %}
 {%- endif %}

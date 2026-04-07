@@ -13,17 +13,18 @@ repos:
       - id: check-yaml
       - id: check-merge-conflict
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.14
-    hooks:
-      # Run the linter.
-      - id: ruff-check
-        args: [ --fix ]
-      # Run the formatter.
-      - id: ruff-format
-
   - repo: local
     hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check --fix
+        language: system
+        types: [ python ]
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: system
+        types: [ python ]
       - id: ty
         name: ty
         entry: ty check

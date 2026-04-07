@@ -1,5 +1,5 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
-import asyncio
+import inspect
 from functools import wraps
 from typing import Any, Awaitable, Callable, ParamSpec, TypeVar, cast, overload
 
@@ -71,7 +71,7 @@ def _wrap_with_hooks(
     wrapped function completes without raising. Otherwise it always runs.
     """
 
-    if asyncio.iscoroutinefunction(func):
+    if inspect.iscoroutinefunction(func):
         func_async = cast(Callable[P, Awaitable[T]], func)
 
         @wraps(func)

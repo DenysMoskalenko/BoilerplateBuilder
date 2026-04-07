@@ -1,5 +1,5 @@
 [project]
-name = "{{ cookiecutter.project_name.lower() }}"
+name = "{{ cookiecutter.project_name }}"
 version = "0.1.0"
 description = "{{ cookiecutter.project_description }}"
 authors = [
@@ -9,84 +9,79 @@ readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version }}"
 
 dependencies = [
-{%- if cookiecutter.project_type == "fastapi_db" %}
-    "alembic>=1.18.3",
-    "fastapi>=0.128.0",
-    "psycopg[binary]>=3.3.2",
-    "pydantic-settings>=2.12.0",
-    "pydantic[email]>=2.12.5",
-    "sqlalchemy>=2.0.46",
-    "uvicorn[standard]>=0.40.0",
-{%- elif cookiecutter.project_type == "fastapi_slim" %}
-    "fastapi>=0.128.0",
-    "pydantic-settings>=2.12.0",
-    "pydantic[email]>=2.12.5",
-    "uvicorn[standard]>=0.40.0",
-{%- elif cookiecutter.project_type == "cli_db" %}
-    "alembic>=1.18.3",
-    "psycopg[binary]>=3.3.2",
-    "pydantic-settings>=2.12.0",
-    "pydantic[email]>=2.12.5",
-    "sqlalchemy>=2.0.46",
-{%- else %}
-    "pydantic-settings>=2.12.0",
-    "pydantic[email]>=2.12.5",
+    "fastapi>=0.135.3",
+    "pydantic-settings>=2.13.1",
+    "pydantic>=2.12.5",
+    "uvicorn[standard]>=0.44.0",
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    "alembic>=1.18.4",
+    "fastapi-pagination>=0.15.12",
+    "psycopg[binary]>=3.3.3",
+    "sqlalchemy>=2.0.49",
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+    "boto3>=1.42.84",
+    "boto3-stubs[bedrock-runtime]>=1.42.84",
+    "pydantic-ai-slim[openai,bedrock]>=1.71.0",
+    "pydantic-extra-types>=2.11.2",
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
-    # Observability
-    "opentelemetry-sdk>=1.39.1",
-    "opentelemetry-exporter-otlp>=1.39.1",
-    "opentelemetry-instrumentation-logging>=0.60b1",
-    "opentelemetry-semantic-conventions>=0.60b1",
-    "prometheus-client>=0.24.1",
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
-    "opentelemetry-instrumentation-fastapi>=0.60b1",
-    "opentelemetry-exporter-prometheus>=0.60b1",
-    "prometheus-fastapi-instrumentator>=7.1.0",
-{%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
-    "opentelemetry-instrumentation-sqlalchemy>=0.60b1",
+    "opentelemetry-sdk>=1.33.0",
+    "opentelemetry-exporter-otlp>=1.33.0",
+    "opentelemetry-instrumentation-logging>=0.54b0",
+    "opentelemetry-semantic-conventions>=0.54b0",
+    "prometheus-client>=0.22.1",
+    "opentelemetry-instrumentation-fastapi>=0.54b0",
+    "opentelemetry-exporter-prometheus>=0.54b0",
+    "prometheus-fastapi-instrumentator>=7.0.0",
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    "opentelemetry-instrumentation-sqlalchemy>=0.54b0",
 {%- endif %}
 {%- endif %}
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.14.14",
-    "ty>=0.0.14",
-    "prek>=0.3.1",
+    "ruff>=0.15.9",
+    "ty>=0.0.29",
+    "prek>=0.3.8",
     "complexipy>=5.2.0",
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     "httpx>=0.28.1",
-{%- endif %}
-    "polyfactory>=3.2.0",
+    "polyfactory>=3.3.0",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
-    "pytest-cov>=7.0.0",
+    "pytest-cov>=7.1.0",
     "pytest-html>=4.2.0",
     "freezegun>=1.5.5",
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
-    "testcontainers[postgres]>=4.14.1",
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    "testcontainers[postgres]>=4.14.2",
 {%- endif %}
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
 
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 filterwarnings = [
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
     "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers.core.waiting_utils",
     "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers.postgres",
-{%- endif %}
 ]
+{%- endif %}
 
 [tool.ty.rules]
 unused-ignore-comment = "ignore"
 
 [tool.ruff]
 line-length = 120
-target-version = "py{{ cookiecutter.python_version.replace('.', '') }}"
+target-version = "py{{ cookiecutter.python_version | replace('.', '') }}"
 exclude = [
     ".venv",
     #    Include ignore folders if needed
@@ -102,6 +97,7 @@ select = [
     "E", # Errors
     "F", # Pyflakes
     "I", # isort
+    "S", # flake8-bandit
     "T20", # flake8-print
     "ASYNC", # flake8-async
     "A", # flake8-builtins
@@ -110,7 +106,11 @@ select = [
     "C90", # McCabe complexity
     "DTZ", # flake8-datetimez
     "ARG", # flake8-unused-arguments
+    "BLE", # flake8-blind-except
+    "ERA", # eradicate - commented Python code
+    "ANN", # flake8-annotations
     "FAST", # FastAPI
+    "RUF", # Ruff-specific rules
 ]
 pydocstyle.convention = 'google'
 
@@ -120,8 +120,13 @@ max-complexity = 15
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true
 
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "ARG"]
+"tests/**/*.py" = ["S101", "ARG", "ANN"]
+"migrations/*" = ["ANN"]
+"app/observability/*" = ["ANN"]
 
 [tool.ruff.lint.isort]
 known-local-folder = ["tests", "app", "scripts"]

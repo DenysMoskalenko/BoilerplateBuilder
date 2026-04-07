@@ -1,27 +1,25 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
 from prometheus_client import Gauge
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
-{%- if cookiecutter.project_type == "fastapi_db" %}
-
-inflight_operations = Gauge(
-    name='inflight_operations',
-    documentation='Current in-flight operations',
-    labelnames=('operation',),
+agent_inflight_requests = Gauge(
+    name='agent_inflight_requests',
+    documentation='Number of AI agent requests currently being processed',
 )
-{%- elif cookiecutter.project_type == "cli_db" %}
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
-inflight_database_operations = Gauge(
-    name='inflight_database_operations',
-    documentation='Current in-flight database operations',
-    labelnames=('operation',),
+database_connections_active = Gauge(
+    name='database_connections_active',
+    documentation='Number of active database connections',
 )
-{%- else %}
+{%- endif %}
+{%- if cookiecutter.project_type == "fastapi_slim" %}
 
-# Example gauge - replace with your actual business metrics
-# No labelnames for simplicity - add them as needed for your use case
-example_inflight_operations = Gauge(
-    name='example_inflight_operations',
-    documentation='Example gauge for demonstrating observability',
+app_info = Gauge(
+    name='app_info',
+    documentation='Application info gauge (extend with your own labels)',
+    labelnames=('version',),
 )
 {%- endif %}
 {%- endif %}
