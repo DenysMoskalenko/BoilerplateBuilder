@@ -1,10 +1,17 @@
-{%- if cookiecutter.project_type == "fastapi_db" %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
+from fastapi_pagination import Page, Params
 
-from app.api.examples.schemas import Example, ExampleCreate, ExampleUpdate
-from app.api.examples.service import ExampleService
+from app.api.v1.examples.schemas import (
+    Example,
+    ExampleCreate,
+    ExampleListFilters,
+    ExampleListSorting,
+    ExampleUpdate,
+)
+from app.services.example_service import ExampleService
 
 router = APIRouter(tags=['Examples'])
 
@@ -16,8 +23,13 @@ async def add_example(creation: ExampleCreate, service: Annotated[ExampleService
 
 
 @router.get('/examples')
-async def list_examples(service: Annotated[ExampleService, Depends()]) -> list[Example]:
-    examples = await service.list_examples()
+async def list_examples(
+    filters: Annotated[ExampleListFilters, Depends()],
+    sorting: Annotated[ExampleListSorting, Depends()],
+    pagination_params: Annotated[Params, Depends()],
+    service: Annotated[ExampleService, Depends()],
+) -> Page[Example]:
+    examples = await service.list_examples(filters, sorting, pagination_params)
     return examples
 
 

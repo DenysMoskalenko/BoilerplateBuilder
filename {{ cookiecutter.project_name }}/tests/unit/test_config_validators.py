@@ -45,7 +45,7 @@ def test_tracing_enabled_without_endpoint() -> None:
     base_config = get_settings().model_dump()
     base_config.update({
         'OBSERVABILITY_TRACING_ENABLED': True,
-        'OBSERVABILITY_OTLP_GRPC_ENDPOINT': None,
+        'OBSERVABILITY_OTLP_GRPC_ENDPOINT': '',
     })
 
     with pytest.raises(ValueError, match='but no OBSERVABILITY_OTLP_GRPC_ENDPOINT is configured'):

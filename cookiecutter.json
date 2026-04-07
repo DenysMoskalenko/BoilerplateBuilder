@@ -8,10 +8,10 @@
     "author_name": "Your Name",
     "author_email": "your.email@example.com",
     "project_type": [
+        "fastapi_db_agent",
         "fastapi_db",
-        "fastapi_slim",
-        "cli_slim",
-        "cli_db"
+        "fastapi_agent",
+        "fastapi_slim"
     ],
     "python_version": [
         "3.13",

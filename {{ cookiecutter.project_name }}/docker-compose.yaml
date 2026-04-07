@@ -1,4 +1,4 @@
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] or cookiecutter.generate_local_otel_stack == "yes" %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] or cookiecutter.generate_local_otel_stack == "yes" %}
 services:
 {%- if cookiecutter.generate_local_otel_stack == "yes" %}
   {{ cookiecutter.project_name.lower() }}-app:
@@ -11,22 +11,22 @@ services:
       - OBSERVABILITY_LOGS_IN_JSON=True
       - OBSERVABILITY_TRACING_ENABLED=True
       - OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=100
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
       - DATABASE_URL=postgresql+psycopg://{{ cookiecutter.project_name.lower() }}_user:{{ cookiecutter.project_name.lower() }}_password@{{ cookiecutter.project_name.lower() }}-db:5432/{{ cookiecutter.project_name.lower() }}_db
       - MIGRATION_ON_STARTUP=True
 {%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_slim"] %}
     ports:
       - "8000:8000"
-{%- endif %}
     depends_on:
-      - {{ cookiecutter.project_name.lower() }}-otel-collector
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
-      - {{ cookiecutter.project_name.lower() }}-db
+      {{ cookiecutter.project_name.lower() }}-otel-collector:
+        condition: service_started
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+      {{ cookiecutter.project_name.lower() }}-db:
+        condition: service_healthy
 {%- endif %}
     networks:
       - observability
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
       - default
 {%- endif %}
 
@@ -35,8 +35,8 @@ services:
     restart: always
     command: [ "--config=/etc/otel-collector-config.yaml" ]
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "8888:8888"   # Collector metrics
+      - "4317:4317"
+      - "8888:8888"
     volumes:
       - ./local_telemetry/otel-collector/config.yaml:/etc/otel-collector-config.yaml:ro
     depends_on:
@@ -52,7 +52,7 @@ services:
     restart: always
     command: [ "-config.file=/etc/tempo.yaml" ]
     ports:
-      - "3200:3200"   # Tempo HTTP (query/frontend)
+      - "3200:3200"
     volumes:
       - ./local_telemetry/tempo/tempo.yaml:/etc/tempo.yaml:ro
       - {{ cookiecutter.project_name.lower() }}-tempo-data:/var/tempo
@@ -117,10 +117,10 @@ services:
 
 {%- endif %}
 
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
   {{ cookiecutter.project_name.lower() }}-db:
     container_name: {{ cookiecutter.project_name.lower() }}_db
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     environment:
       - POSTGRES_USER={{ cookiecutter.project_name.lower() }}_user
       - POSTGRES_PASSWORD={{ cookiecutter.project_name.lower() }}_password
@@ -142,13 +142,13 @@ services:
 networks:
   observability:
     name: observability
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
   default:
 {%- endif %}
 {%- endif %}
 
 volumes:
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
   postgres_data:
     name: {{ cookiecutter.project_name.lower() }}_postgres_data
 {%- endif %}

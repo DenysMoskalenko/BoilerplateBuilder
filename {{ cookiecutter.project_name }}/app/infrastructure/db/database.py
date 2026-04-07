@@ -1,4 +1,4 @@
-{%- if cookiecutter.project_type in ["fastapi_db", "cli_db"] %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Any, AsyncGenerator, AsyncIterable
@@ -6,7 +6,7 @@ from typing import Any, AsyncGenerator, AsyncIterable
 from alembic.config import Config
 from pydantic import PostgresDsn
 from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
@@ -51,7 +51,7 @@ async def get_session() -> AsyncIterable[AsyncSession]:
 
 @asynccontextmanager
 async def open_db_session() -> AsyncGenerator[AsyncSession, Any]:
-    """For usage as context manager outside FastAPI Depends."""
+    """For usage as a context manager outside FastAPI Depends."""
     factory: async_sessionmaker = async_session_factory()
     session: AsyncSession = factory()
     try:
