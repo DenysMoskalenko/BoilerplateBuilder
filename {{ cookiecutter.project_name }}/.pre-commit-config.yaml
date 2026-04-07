@@ -16,12 +16,12 @@ repos:
   - repo: local
     hooks:
       - id: ruff-check
-        name: ruff check
+        name: linter
         entry: ruff check --fix
         language: system
         types: [ python ]
       - id: ruff-format
-        name: ruff format
+        name: formatter
         entry: ruff format
         language: system
         types: [ python ]
