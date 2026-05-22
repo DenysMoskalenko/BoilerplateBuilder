@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout cookiecutter template
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           clean: true
@@ -31,7 +31,7 @@ jobs:
           rm -rf /tmp/cookiecutter*
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: ${{ matrix.python_version }}
           enable-cache: false
@@ -90,13 +90,13 @@ jobs:
         python_version: [ "3.11", "3.12" ]
     steps:
       - name: Checkout cookiecutter template
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           clean: true
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: ${{ matrix.python_version }}
           enable-cache: false
@@ -222,13 +222,13 @@ jobs:
       - test-template-generation
     steps:
       - name: Checkout cookiecutter template
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           clean: true
 
       - name: Install uv and Python
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: "3.13"
           enable-cache: false

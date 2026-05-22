@@ -64,12 +64,19 @@ if __name__ == '__main__':
 {%- if cookiecutter.use_otel_observability == "yes" %}
     log_config, log_level = get_uvicorn_logging_config()
     uvicorn.run(
-        'app.main:create_app', factory=True, host='localhost', port=8000,
-        log_config=log_config, log_level=log_level,
+        'app.main:create_app',
+        factory=True,
+        host='0.0.0.0',  # noqa: S104
+        port=8000,
+        log_config=log_config,
+        log_level=log_level,
     )
 {%- else %}
     uvicorn.run(
-        'app.main:create_app', factory=True, host='localhost', port=8000,
+        'app.main:create_app',
+        factory=True,
+        host='0.0.0.0',  # noqa: S104
+        port=8000,
         log_level=get_settings().LOG_LEVEL.lower(),
     )
 {%- endif %}
