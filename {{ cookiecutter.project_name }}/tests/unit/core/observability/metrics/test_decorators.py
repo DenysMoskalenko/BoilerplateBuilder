@@ -55,6 +55,20 @@ def test_track_inflight_decrements_sync_gauge_after_call() -> None:
     assert get_metric_value(gauge, 'test_track_inflight_sync_decrement') == 0.0
 
 
+def test_track_inflight_decrements_sync_gauge_after_failure() -> None:
+    """Inflight tracking decrements synchronous gauges after failed calls."""
+    gauge = build_gauge('test_track_inflight_sync_error')
+
+    @metrics_decorators.track_inflight(gauge)
+    def sample() -> None:
+        raise RuntimeError('boom')
+
+    with pytest.raises(RuntimeError, match='boom'):
+        sample()
+
+    assert get_metric_value(gauge, 'test_track_inflight_sync_error') == 0.0
+
+
 async def test_track_inflight_increments_async_gauge_during_call() -> None:
     """Inflight tracking increments an asynchronous gauge while the call is running."""
     gauge = build_gauge('test_track_inflight_async_increment')
@@ -136,6 +150,19 @@ def test_increment_after_can_count_failed_calls_when_success_only_is_disabled() 
         sample()
 
     assert get_metric_value(counter, 'test_increment_after_error_count_total') == 1.0
+
+
+def test_increment_after_can_count_successes_when_success_only_is_disabled() -> None:
+    """Completion counters still count successful calls when success-only mode is disabled."""
+    counter = build_counter('test_increment_after_all_success_count')
+
+    @metrics_decorators.increment_after(counter, success_only=False)
+    def sample() -> None:
+        return None
+
+    sample()
+
+    assert get_metric_value(counter, 'test_increment_after_all_success_count_total') == 1.0
 
 
 async def test_increment_on_error_counts_async_failures() -> None:

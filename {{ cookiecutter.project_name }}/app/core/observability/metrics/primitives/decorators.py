@@ -17,7 +17,12 @@ T = TypeVar('T')
 
 def track_inflight(gauge_or_child: InflightMetric) -> Callable[[Callable[P, T]], Callable[P, T]]:
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
-        return _wrap_with_hooks(func, before=gauge_or_child.inc, after=gauge_or_child.dec)
+        return _wrap_with_hooks(
+            func,
+            before=gauge_or_child.inc,
+            after=gauge_or_child.dec,
+            on_exception=gauge_or_child.dec,
+        )
 
     return decorator
 
@@ -26,7 +31,8 @@ def increment_after(
     counter_or_child: CompletionMetric, success_only: bool = True
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
-        return _wrap_with_hooks(func, before=None, after=counter_or_child.inc, after_on_success_only=success_only)
+        on_exception = None if success_only else counter_or_child.inc
+        return _wrap_with_hooks(func, before=None, after=counter_or_child.inc, on_exception=on_exception)
 
     return decorator
 
@@ -73,13 +79,16 @@ def _wrap_with_hooks(
     before: Hook,
     after: Hook,
     on_exception: Hook = None,
-    after_on_success_only: bool = False,
 ) -> Callable[P, Awaitable[T]]: ...
 
 
 @overload
 def _wrap_with_hooks(
-    func: Callable[P, T], *, before: Hook, after: Hook, on_exception: Hook = None, after_on_success_only: bool = False
+    func: Callable[P, T],
+    *,
+    before: Hook,
+    after: Hook,
+    on_exception: Hook = None,
 ) -> Callable[P, T]: ...
 
 
@@ -89,7 +98,6 @@ def _wrap_with_hooks(
     before: Hook,
     after: Hook,
     on_exception: Hook = None,
-    after_on_success_only: bool = False,
 ) -> Callable[P, T] | Callable[P, Awaitable[T]]:
     if inspect.iscoroutinefunction(func):
         async_func = cast(Callable[P, Awaitable[T]], func)
@@ -98,59 +106,46 @@ def _wrap_with_hooks(
             before=before,
             after=after,
             on_exception=on_exception,
-            after_on_success_only=after_on_success_only,
         )
 
     sync_func = cast(Callable[P, T], func)
-    return _wrap_sync_with_hooks(
-        sync_func, before=before, after=after, on_exception=on_exception, after_on_success_only=after_on_success_only
-    )
+    return _wrap_sync_with_hooks(sync_func, before=before, after=after, on_exception=on_exception)
 
 
 def _wrap_async_with_hooks(
-    func: Callable[P, Awaitable[T]], before: Hook, after: Hook, on_exception: Hook, after_on_success_only: bool
+    func: Callable[P, Awaitable[T]], before: Hook, after: Hook, on_exception: Hook
 ) -> Callable[P, Awaitable[T]]:
     @wraps(func)
     async def a_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         if before:
             before()
-        _ok = False
         try:
             result = await func(*args, **kwargs)
         except Exception:
             if on_exception:
                 on_exception()
             raise
-        else:
-            _ok = True
-            return result
-        finally:
-            if after and (not after_on_success_only or _ok):
-                after()
+        if after:
+            after()
+        return result
 
     return a_wrapper
 
 
-def _wrap_sync_with_hooks(
-    func: Callable[P, T], before: Hook, after: Hook, on_exception: Hook, after_on_success_only: bool
-) -> Callable[P, T]:
+def _wrap_sync_with_hooks(func: Callable[P, T], before: Hook, after: Hook, on_exception: Hook) -> Callable[P, T]:
     @wraps(func)
     def s_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         if before:
             before()
-        _ok = False
         try:
             result = func(*args, **kwargs)
         except Exception:
             if on_exception:
                 on_exception()
             raise
-        else:
-            _ok = True
-            return result
-        finally:
-            if after and (not after_on_success_only or _ok):
-                after()
+        if after:
+            after()
+        return result
 
     return s_wrapper
 {%- endif %}
