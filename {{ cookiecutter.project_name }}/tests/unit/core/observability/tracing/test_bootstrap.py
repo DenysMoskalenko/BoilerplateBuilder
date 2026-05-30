@@ -114,6 +114,20 @@ def test_setup_requires_endpoint(monkeypatch: MonkeyPatch) -> None:
     with pytest.raises(ValueError, match='OBSERVABILITY_TRACING_OTLP_ENDPOINT is required'):
         tracing_bootstrap.setup(app=FastAPI(), settings=settings)
 
+    assert spy.logging_format_override_disabled is False
+    assert spy.fastapi_was_instrumented is False
+    assert spy.sampler is None
+    assert spy.span_exporter is None
+    assert spy.span_processor is None
+    assert spy.tracer_provider is None
+    assert spy.global_tracer_provider is None
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    assert spy.sqlalchemy_was_instrumented is False
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+    assert spy.agent_instrumentation is None
+{%- endif %}
+
 
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 def test_setup_instruments_sqlalchemy(monkeypatch: MonkeyPatch) -> None:

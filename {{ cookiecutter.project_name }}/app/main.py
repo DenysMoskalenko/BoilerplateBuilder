@@ -9,7 +9,7 @@ from app.api.v1.router import router as v1_router
 {%- endif %}
 from app.api.health_checks.routes import router as health_checks_router
 from app.core.config import get_settings
-from app.core.logging import build_logging_config
+from app.core.logging import build_logging_config, configure_logging
 {%- if cookiecutter.project_type != "fastapi_slim" %}
 from app.core.exception_handlers import include_exception_handlers
 {%- endif %}
@@ -23,6 +23,7 @@ from app.core import observability
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
 
     _app = FastAPI(
         title=settings.PROJECT_NAME,

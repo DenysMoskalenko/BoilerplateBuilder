@@ -36,15 +36,15 @@ def create_resource(settings: Settings) -> Resource:
 
 
 def setup(app: FastAPI, settings: Settings) -> None:
+    endpoint = settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT
+    if endpoint is None:
+        raise ValueError('OBSERVABILITY_TRACING_OTLP_ENDPOINT is required when tracing is enabled')
+
     LoggingInstrumentor().instrument(set_logging_format=False)
     FastAPIInstrumentor().instrument_app(app, exclude_spans=['send', 'receive'], excluded_urls=EXCLUDED_URLS_REGEX)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     SQLAlchemyInstrumentor().instrument()
 {%- endif %}
-
-    endpoint = settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT
-    if endpoint is None:
-        raise ValueError('OBSERVABILITY_TRACING_OTLP_ENDPOINT is required when tracing is enabled')
 
     sampler = TraceIdRatioBased(settings.OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT / 100)
     provider = TracerProvider(resource=create_resource(settings=settings), sampler=sampler)
