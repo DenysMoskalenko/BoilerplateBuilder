@@ -1,6 +1,5 @@
-from enum import StrEnum
 from logging.config import dictConfig
-from typing import Any
+from typing import Any, Literal, TypeAlias
 
 from app.core.logging.models import LOG_TIMESTAMP_FORMAT, LogFormatType
 
@@ -10,13 +9,7 @@ ROOT_LOGGER_NAME = 'root'
 UVICORN_LOGGER_NAMES = ('uvicorn', 'uvicorn.error', 'uvicorn.access')
 
 
-class LogLevel(StrEnum):
-    CRITICAL = 'CRITICAL'
-    ERROR = 'ERROR'
-    WARNING = 'WARNING'
-    INFO = 'INFO'
-    DEBUG = 'DEBUG'
-    NOTSET = 'NOTSET'
+LogLevel: TypeAlias = Literal['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 
 
 def build_logging_config(log_level: LogLevel, format_type: LogFormatType) -> dict[str, Any]:

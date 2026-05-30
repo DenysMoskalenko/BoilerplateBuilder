@@ -20,7 +20,7 @@ from app.core.logging import LogFormatType, LogLevel
 class Settings(BaseSettings):
     PROJECT_NAME: str = '{{ cookiecutter.project_name }}'
     PROJECT_VERSION: str = '0.1.0'
-    LOG_LEVEL: LogLevel = LogLevel.INFO
+    LOG_LEVEL: LogLevel = 'INFO'
     LOG_FORMAT: LogFormatType = LogFormatType.STDOUT
     ROOT_PATH: str = ''
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
