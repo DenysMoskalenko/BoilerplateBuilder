@@ -42,7 +42,9 @@ jobs:
 
       - name: Generate project from template
         run: |
-          echo "Generating project_type=${{ matrix.project_type }} python=${{ matrix.python_version }} observability=${{ matrix.observability_profile }}"
+          echo "Generating project_type=${{ matrix.project_type }}" \
+            "python=${{ matrix.python_version }}" \
+            "observability=${{ matrix.observability_profile }}"
           cookiecutter . --no-input \
             project_name="TestProject" \
             project_type="${{ matrix.project_type }}" \
@@ -62,7 +64,8 @@ jobs:
           uv sync
 
           cp dist.env .env
-          if [[ "${{ matrix.project_type }}" == "fastapi_agent" || "${{ matrix.project_type }}" == "fastapi_db_agent" ]]; then
+          if [[ "${{ matrix.project_type }}" == "fastapi_agent" || \
+            "${{ matrix.project_type }}" == "fastapi_db_agent" ]]; then
             echo "OPENAI_API_KEY=test-key" >> .env
           fi
 
@@ -117,7 +120,9 @@ jobs:
                     generate_local_stack="no"
                   fi
 
-                  echo "Testing: $project_type, pre_commit=$pre_commit, github_actions=$github_actions, observability=$use_otel, local_stack=$generate_local_stack"
+                  echo "Testing: $project_type, pre_commit=$pre_commit," \
+                    "github_actions=$github_actions, observability=$use_otel," \
+                    "local_stack=$generate_local_stack"
 
                   project_name="TestProject"
 
