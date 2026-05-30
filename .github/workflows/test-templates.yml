@@ -189,8 +189,8 @@ jobs:
                   fi
 
                   if [[ "$use_otel" == "yes" ]]; then
-                    if [[ ! -d "$project_name/app/observability" ]]; then
-                      echo "❌ app/observability should exist when observability is enabled"
+                    if [[ ! -d "$project_name/app/core/observability" ]]; then
+                      echo "❌ app/core/observability should exist when observability is enabled"
                       exit 1
                     fi
                     if [[ "$generate_local_stack" == "yes" && ! -d "$project_name/local_telemetry" ]]; then
@@ -198,8 +198,8 @@ jobs:
                       exit 1
                     fi
                   else
-                    if [[ -d "$project_name/app/observability" ]]; then
-                      echo "❌ app/observability should not exist when observability is disabled"
+                    if [[ -d "$project_name/app/core/observability" ]]; then
+                      echo "❌ app/core/observability should not exist when observability is disabled"
                       exit 1
                     fi
                     if [[ -d "$project_name/local_telemetry" ]]; then
