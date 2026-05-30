@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-PROJECT_TYPES = ('fastapi_db', 'fastapi_slim', 'cli_db', 'cli_slim')
+PROJECT_TYPES = ('fastapi_db_agent', 'fastapi_db', 'fastapi_agent', 'fastapi_slim')
 PYTHON_VERSIONS = ('3.11', '3.12', '3.13')
 
 
