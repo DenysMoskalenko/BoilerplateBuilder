@@ -1,5 +1,5 @@
 {%- if cookiecutter.use_otel_observability == "yes" -%}
-from .decorators import trace
+from app.core.observability.tracing.primitives.decorators import trace
 
 __all__ = ['trace']
 {%- endif %}
