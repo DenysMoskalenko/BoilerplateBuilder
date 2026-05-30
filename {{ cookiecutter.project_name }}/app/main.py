@@ -1,7 +1,3 @@
-{%- if cookiecutter.use_otel_observability != "yes" %}
-import logging
-{%- endif %}
-
 from fastapi import FastAPI
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from fastapi_pagination import add_pagination
@@ -13,6 +9,7 @@ from app.api.v1.router import router as v1_router
 {%- endif %}
 from app.api.health_checks.routes import router as health_checks_router
 from app.core.config import get_settings
+from app.core.logging import build_logging_config
 {%- if cookiecutter.project_type != "fastapi_slim" %}
 from app.core.exception_handlers import include_exception_handlers
 {%- endif %}
@@ -20,19 +17,12 @@ from app.core.exception_handlers import include_exception_handlers
 from app.core.lifespan import lifespan
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
-from app.observability.bootstrap import setup_observability
-from app.observability.logging.config import get_uvicorn_logging_config
+from app.core import observability
 {%- endif %}
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-{%- if cookiecutter.use_otel_observability != "yes" %}
-    logging.basicConfig(
-        level=settings.LOG_LEVEL,
-        format='[%(asctime)s] %(levelname)s %(name)s %(message)s',
-    )
-{%- endif %}
 
     _app = FastAPI(
         title=settings.PROJECT_NAME,
@@ -43,7 +33,7 @@ def create_app() -> FastAPI:
         root_path=settings.ROOT_PATH,
     )
 {%- if cookiecutter.use_otel_observability == "yes" %}
-    setup_observability(_app, settings)
+    observability.setup(app=_app, settings=settings)
 {%- endif %}
 {%- if cookiecutter.project_type != "fastapi_slim" %}
     _app.include_router(v1_router)
@@ -61,22 +51,12 @@ def create_app() -> FastAPI:
 
 
 if __name__ == '__main__':
-{%- if cookiecutter.use_otel_observability == "yes" %}
-    log_config, log_level = get_uvicorn_logging_config()
+    settings = get_settings()
     uvicorn.run(
         'app.main:create_app',
         factory=True,
         host='0.0.0.0',  # noqa: S104
         port=8000,
-        log_config=log_config,
-        log_level=log_level,
+        log_level=settings.LOG_LEVEL.lower(),
+        log_config=build_logging_config(settings.LOG_LEVEL, settings.LOG_FORMAT),
     )
-{%- else %}
-    uvicorn.run(
-        'app.main:create_app',
-        factory=True,
-        host='0.0.0.0',  # noqa: S104
-        port=8000,
-        log_level=get_settings().LOG_LEVEL.lower(),
-    )
-{%- endif %}

@@ -57,10 +57,10 @@ def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     os.environ['OPENAI_API_KEY'] = 'test-openai-key'
     cast(Any, pydantic_ai_models).ALLOW_MODEL_REQUESTS = False
 {%- endif %}
+    os.environ['LOG_FORMAT'] = 'stdout'
 {%- if cookiecutter.use_otel_observability == "yes" %}
     os.environ['OBSERVABILITY_TRACING_ENABLED'] = 'False'
     os.environ['OBSERVABILITY_METRICS_ENABLED'] = 'False'
-    os.environ['OBSERVABILITY_LOGS_IN_JSON'] = 'False'
 {%- endif %}
 
 

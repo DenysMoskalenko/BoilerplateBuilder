@@ -19,7 +19,7 @@ search_queries_total = Counter(
 
 http_business_requests_total = Counter(
     name='http_business_requests_total',
-    documentation='Total business-level HTTP requests (extend with your own labels)',
+    documentation='Total business-level HTTP requests',
 )
 {%- endif %}
 {%- endif %}

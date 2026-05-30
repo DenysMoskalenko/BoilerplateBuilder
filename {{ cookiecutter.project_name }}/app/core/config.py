@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Literal{%- if cookiecutter.use_otel_observability == "yes" %}, Self{%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
 from pydantic import PostgresDsn
@@ -8,17 +8,20 @@ from pydantic import PostgresDsn
 
 from pydantic import SecretStr
 {%- endif %}
-from pydantic_settings import BaseSettings, SettingsConfigDict
 {%- if cookiecutter.use_otel_observability == "yes" %}
 
-from pydantic import field_validator, model_validator
+from pydantic import AnyHttpUrl, Field, model_validator
 {%- endif %}
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.core.logging import LogFormatType, LogLevel
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = '{{ cookiecutter.project_name }}'
     PROJECT_VERSION: str = '0.1.0'
-    LOG_LEVEL: Literal['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'] = 'INFO'
+    LOG_LEVEL: LogLevel = LogLevel.INFO
+    LOG_FORMAT: LogFormatType = LogFormatType.STDOUT
     ROOT_PATH: str = ''
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
@@ -55,38 +58,16 @@ class Settings(BaseSettings):
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
 
-    OBSERVABILITY_LOGS_IN_JSON: bool = True
-    OBSERVABILITY_TRACING_ENABLED: bool = True
-    OBSERVABILITY_OTLP_GRPC_ENDPOINT: str = ''
-    OBSERVABILITY_METRICS_ENABLED: bool = True
-    OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT: int = 100
-
-    @field_validator('OBSERVABILITY_OTLP_GRPC_ENDPOINT')
-    @classmethod
-    def validate_otlp_endpoint(cls, value: str) -> str:
-        if not value:
-            return value
-        if not value.startswith('grpc://'):
-            raise ValueError('OTLP_GRPC_ENDPOINT must use the grpc:// scheme')
-        rest = value[len('grpc://'):]
-        if not rest or rest.startswith(':'):
-            raise ValueError('OTLP_GRPC_ENDPOINT must include a hostname')
-        if ':' not in rest:
-            raise ValueError('OTLP_GRPC_ENDPOINT must include a port')
-        return value
-
-    @field_validator('OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT')
-    @classmethod
-    def validate_sample_rate(cls, value: int) -> int:
-        if not 0 <= value <= 100:
-            raise ValueError('OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT must be between 0 and 100')
-        return value
+    OBSERVABILITY_TRACING_ENABLED: bool = False
+    OBSERVABILITY_METRICS_ENABLED: bool = False
+    OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT: float = Field(default=100.0, ge=0.0, le=100.0)
+    OBSERVABILITY_TRACING_OTLP_ENDPOINT: AnyHttpUrl | None = None
 
     @model_validator(mode='after')
-    def validate_tracing_requires_endpoint(self) -> 'Settings':
-        if self.OBSERVABILITY_TRACING_ENABLED and not self.OBSERVABILITY_OTLP_GRPC_ENDPOINT:
+    def validate_observability_tracing_config(self) -> Self:
+        if self.OBSERVABILITY_TRACING_ENABLED and self.OBSERVABILITY_TRACING_OTLP_ENDPOINT is None:
             raise ValueError(
-                'Tracing is enabled but no OBSERVABILITY_OTLP_GRPC_ENDPOINT is configured'
+                'OBSERVABILITY_TRACING_OTLP_ENDPOINT is required when OBSERVABILITY_TRACING_ENABLED=True'
             )
         return self
 {%- endif %}

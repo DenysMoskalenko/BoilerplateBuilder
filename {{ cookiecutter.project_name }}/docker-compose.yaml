@@ -6,9 +6,10 @@ services:
     env_file:
       - .env
     environment:
-      - OBSERVABILITY_OTLP_GRPC_ENDPOINT=grpc://{{ cookiecutter.project_name.lower() }}-otel-collector:4317
-      - OBSERVABILITY_LOGS_IN_JSON=True
+      - OBSERVABILITY_TRACING_OTLP_ENDPOINT=http://{{ cookiecutter.project_name.lower() }}-otel-collector:4317
+      - LOG_FORMAT=json
       - OBSERVABILITY_TRACING_ENABLED=True
+      - OBSERVABILITY_METRICS_ENABLED=True
       - OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=100
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
       - DATABASE_URL=postgresql+psycopg://{{ cookiecutter.project_name.lower() }}_user:{{ cookiecutter.project_name.lower() }}_password@{{ cookiecutter.project_name.lower() }}-db:5432/{{ cookiecutter.project_name.lower() }}_db
@@ -30,23 +31,19 @@ services:
 {%- endif %}
 
   {{ cookiecutter.project_name.lower() }}-otel-collector:
-    image: otel/opentelemetry-collector:0.104.0
+    image: otel/opentelemetry-collector:0.146.1
     command: [ "--config=/etc/otel-collector-config.yaml" ]
     ports:
       - "4317:4317"
-      - "8888:8888"
     volumes:
       - ./local_telemetry/otel-collector/config.yaml:/etc/otel-collector-config.yaml:ro
     depends_on:
       - {{ cookiecutter.project_name.lower() }}-tempo
-    links:
-      - {{ cookiecutter.project_name.lower() }}-tempo:{{ cookiecutter.project_name.lower() }}-tempo
-      - {{ cookiecutter.project_name.lower() }}-tempo:tempo
     networks:
       - observability
 
   {{ cookiecutter.project_name.lower() }}-tempo:
-    image: grafana/tempo:2.6.1
+    image: grafana/tempo:2.10.1
     command: [ "-config.file=/etc/tempo.yaml" ]
     ports:
       - "3200:3200"
@@ -57,7 +54,7 @@ services:
       - observability
 
   {{ cookiecutter.project_name.lower() }}-prometheus:
-    image: prom/prometheus:v2.55.0
+    image: prom/prometheus:v3.9.1
     command: [ "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=2d" ]
     ports:
       - "9090:9090"
@@ -70,7 +67,7 @@ services:
       - observability
 
   {{ cookiecutter.project_name.lower() }}-grafana:
-    image: grafana/grafana:10.4.3
+    image: grafana/grafana:12.3.3
     environment:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -85,11 +82,12 @@ services:
     depends_on:
       - {{ cookiecutter.project_name.lower() }}-prometheus
       - {{ cookiecutter.project_name.lower() }}-tempo
+      - {{ cookiecutter.project_name.lower() }}-loki
     networks:
       - observability
 
   {{ cookiecutter.project_name.lower() }}-loki:
-    image: grafana/loki:2.9.8
+    image: grafana/loki:3.6.7
     command: ["-config.file=/etc/loki/local-config.yaml"]
     ports:
       - "3100:3100"
@@ -99,12 +97,15 @@ services:
     networks:
       - observability
 
-  {{ cookiecutter.project_name.lower() }}-promtail:
-    image: grafana/promtail:2.9.8
-    command: ["-config.file=/etc/promtail/config.yml"]
+  {{ cookiecutter.project_name.lower() }}-alloy:
+    image: grafana/alloy:v1.13.2
+    command: ["run", "/etc/alloy/config.alloy", "--storage.path=/var/lib/alloy/data"]
     volumes:
-      - ./local_telemetry/promtail/config.yml:/etc/promtail/config.yml:ro
+      - ./local_telemetry/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - {{ cookiecutter.project_name.lower() }}-alloy-data:/var/lib/alloy/data
+    depends_on:
+      - {{ cookiecutter.project_name.lower() }}-loki
     networks:
       - observability
 
@@ -150,5 +151,6 @@ volumes:
   {{ cookiecutter.project_name.lower() }}-prometheus-data: { }
   {{ cookiecutter.project_name.lower() }}-grafana-data: { }
   {{ cookiecutter.project_name.lower() }}-loki-data: { }
+  {{ cookiecutter.project_name.lower() }}-alloy-data: { }
 {%- endif %}
 {%- endif %}

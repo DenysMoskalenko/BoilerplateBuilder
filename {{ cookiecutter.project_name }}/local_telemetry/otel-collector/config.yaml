@@ -22,7 +22,4 @@ service:
       receivers: [ otlp ]
       processors: [ batch ]
       exporters: [ otlphttp, debug ]
-  telemetry:
-    metrics:
-      address: 0.0.0.0:8888
 {%- endif %}
