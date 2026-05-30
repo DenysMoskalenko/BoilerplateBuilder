@@ -1,5 +1,12 @@
 from functools import lru_cache
-from typing import Literal{%- if cookiecutter.use_otel_observability == "yes" %}, Self{%- endif %}
+{% set is_agent = cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
+{% if is_agent and cookiecutter.use_otel_observability == "yes" -%}
+from typing import Literal, Self
+{% elif is_agent -%}
+from typing import Literal
+{% elif cookiecutter.use_otel_observability == "yes" -%}
+from typing import Self
+{% endif -%}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
 from pydantic import PostgresDsn

@@ -37,7 +37,10 @@ def test_accepts_https_tracing_endpoint() -> None:
     """Settings accept HTTPS OTLP endpoints for secure collector connections."""
     settings = build_settings(OBSERVABILITY_TRACING_OTLP_ENDPOINT='https://localhost:4317')
 
-    assert settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT and settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT.scheme == 'https'
+    assert (
+        settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT
+        and settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT.scheme == 'https'
+    )
 
 
 def test_tracing_is_disabled_by_default() -> None:
