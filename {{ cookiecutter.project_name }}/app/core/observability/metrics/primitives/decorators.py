@@ -1,5 +1,6 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Generator
+from contextlib import contextmanager
 from functools import wraps
 import inspect
 import time
@@ -51,21 +52,15 @@ def track_latency(histogram: Histogram) -> Callable[[Callable[P, T]], Callable[P
 
             @wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-                start = time.perf_counter()
-                try:
+                with _observe_latency(histogram):
                     return await async_func(*args, **kwargs)
-                finally:
-                    histogram.observe(time.perf_counter() - start)
 
             return cast(Callable[P, T], async_wrapper)
 
         @wraps(func)
         def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            start = time.perf_counter()
-            try:
+            with _observe_latency(histogram):
                 return func(*args, **kwargs)
-            finally:
-                histogram.observe(time.perf_counter() - start)
 
         return sync_wrapper
 
@@ -101,51 +96,45 @@ def _wrap_with_hooks(
 ) -> Callable[P, T] | Callable[P, Awaitable[T]]:
     if inspect.iscoroutinefunction(func):
         async_func = cast(Callable[P, Awaitable[T]], func)
-        return _wrap_async_with_hooks(
-            async_func,
-            before=before,
-            after=after,
-            on_exception=on_exception,
-        )
+
+        @wraps(func)
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            with _hook_scope(before=before, after=after, on_exception=on_exception):
+                return await async_func(*args, **kwargs)
+
+        return async_wrapper
 
     sync_func = cast(Callable[P, T], func)
-    return _wrap_sync_with_hooks(sync_func, before=before, after=after, on_exception=on_exception)
 
-
-def _wrap_async_with_hooks(
-    func: Callable[P, Awaitable[T]], before: Hook, after: Hook, on_exception: Hook
-) -> Callable[P, Awaitable[T]]:
     @wraps(func)
-    async def a_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        if before:
-            before()
-        try:
-            result = await func(*args, **kwargs)
-        except Exception:
-            if on_exception:
-                on_exception()
-            raise
+    def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        with _hook_scope(before=before, after=after, on_exception=on_exception):
+            return sync_func(*args, **kwargs)
+
+    return sync_wrapper
+
+
+@contextmanager
+def _hook_scope(*, before: Hook, after: Hook, on_exception: Hook) -> Generator[None, None, None]:
+    if before:
+        before()
+    try:
+        yield
+    except Exception:
+        if on_exception:
+            on_exception()
+        raise
+    else:
         if after:
             after()
-        return result
-
-    return a_wrapper
 
 
-def _wrap_sync_with_hooks(func: Callable[P, T], before: Hook, after: Hook, on_exception: Hook) -> Callable[P, T]:
-    @wraps(func)
-    def s_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        if before:
-            before()
-        try:
-            result = func(*args, **kwargs)
-        except Exception:
-            if on_exception:
-                on_exception()
-            raise
-        if after:
-            after()
-        return result
+@contextmanager
+def _observe_latency(histogram: Histogram) -> Generator[None, None, None]:
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        histogram.observe(time.perf_counter() - start)
 
-    return s_wrapper
 {%- endif %}
