@@ -214,3 +214,6 @@ __marimo__/
 vibe/
 .template-builds/
 review-builds/
+
+# Local Cursor MCP config (contains GitHub PAT)
+.cursor/mcp.json
