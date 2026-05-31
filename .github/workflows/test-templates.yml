@@ -13,9 +13,9 @@ jobs:
       matrix:
         project_type: [ fastapi_db_agent, fastapi_db, fastapi_agent, fastapi_slim ]
         python_version: [ "3.11", "3.12", "3.13" ]
-        observability_profile: [ disabled, enabled_with_stack ]
+        observability_profile: [ disabled, enabled_without_stack, enabled_with_stack ]
     env:
-      USE_OTEL_OBSERVABILITY: ${{ matrix.observability_profile == 'enabled_with_stack' && 'yes' || 'no' }}
+      USE_OTEL_OBSERVABILITY: ${{ matrix.observability_profile == 'disabled' && 'no' || 'yes' }}
       GENERATE_LOCAL_OTEL_STACK: ${{ matrix.observability_profile == 'enabled_with_stack' && 'yes' || 'no' }}
 
     steps:
@@ -42,7 +42,9 @@ jobs:
 
       - name: Generate project from template
         run: |
-          echo "Generating project_type=${{ matrix.project_type }} python=${{ matrix.python_version }} observability=${{ matrix.observability_profile }}"
+          echo "Generating project_type=${{ matrix.project_type }}" \
+            "python=${{ matrix.python_version }}" \
+            "observability=${{ matrix.observability_profile }}"
           cookiecutter . --no-input \
             project_name="TestProject" \
             project_type="${{ matrix.project_type }}" \
@@ -62,7 +64,8 @@ jobs:
           uv sync
 
           cp dist.env .env
-          if [[ "${{ matrix.project_type }}" == "fastapi_agent" || "${{ matrix.project_type }}" == "fastapi_db_agent" ]]; then
+          if [[ "${{ matrix.project_type }}" == "fastapi_agent" || \
+            "${{ matrix.project_type }}" == "fastapi_db_agent" ]]; then
             echo "OPENAI_API_KEY=test-key" >> .env
           fi
 
@@ -110,16 +113,37 @@ jobs:
           for project_type in fastapi_db_agent fastapi_db fastapi_agent fastapi_slim; do
             for pre_commit in yes no; do
               for github_actions in yes no; do
-                for use_otel in yes no; do
-                  if [[ "$use_otel" == "yes" ]]; then
-                    generate_local_stack="yes"
-                  else
-                    generate_local_stack="no"
-                  fi
+                for observability_pair in yes:yes yes:no no:no no:yes; do
+                  IFS=: read -r use_otel generate_local_stack <<< "$observability_pair"
 
-                  echo "Testing: $project_type, pre_commit=$pre_commit, github_actions=$github_actions, observability=$use_otel, local_stack=$generate_local_stack"
+                  echo "Testing: $project_type, pre_commit=$pre_commit," \
+                    "github_actions=$github_actions, observability=$use_otel," \
+                    "local_stack=$generate_local_stack"
 
                   project_name="TestProject"
+
+                  if [[ "$use_otel" == "no" && "$generate_local_stack" == "yes" ]]; then
+                    if cookiecutter . --no-input \
+                      project_name="$project_name" \
+                      project_type="$project_type" \
+                      python_version="${{ matrix.python_version }}" \
+                      use_pre_commit="$pre_commit" \
+                      use_github_actions="$github_actions" \
+                      initialize_git="no" \
+                      use_otel_observability="$use_otel" \
+                      generate_local_otel_stack="$generate_local_stack"; then
+                      echo "❌ invalid observability pair should fail early"
+                      exit 1
+                    fi
+
+                    if [[ -d "$project_name" ]]; then
+                      echo "❌ invalid observability pair should not create a project"
+                      exit 1
+                    fi
+
+                    echo "✓ invalid observability pair rejected early"
+                    continue
+                  fi
 
                   cookiecutter . --no-input \
                     project_name="$project_name" \
@@ -189,8 +213,8 @@ jobs:
                   fi
 
                   if [[ "$use_otel" == "yes" ]]; then
-                    if [[ ! -d "$project_name/app/observability" ]]; then
-                      echo "❌ app/observability should exist when observability is enabled"
+                    if [[ ! -d "$project_name/app/core/observability" ]]; then
+                      echo "❌ app/core/observability should exist when observability is enabled"
                       exit 1
                     fi
                     if [[ "$generate_local_stack" == "yes" && ! -d "$project_name/local_telemetry" ]]; then
@@ -198,8 +222,8 @@ jobs:
                       exit 1
                     fi
                   else
-                    if [[ -d "$project_name/app/observability" ]]; then
-                      echo "❌ app/observability should not exist when observability is disabled"
+                    if [[ -d "$project_name/app/core/observability" ]]; then
+                      echo "❌ app/core/observability should not exist when observability is disabled"
                       exit 1
                     fi
                     if [[ -d "$project_name/local_telemetry" ]]; then

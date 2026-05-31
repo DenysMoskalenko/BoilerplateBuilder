@@ -18,7 +18,7 @@ database_connections_active = Gauge(
 
 app_info = Gauge(
     name='app_info',
-    documentation='Application info gauge (extend with your own labels)',
+    documentation='Application info gauge',
     labelnames=('version',),
 )
 {%- endif %}

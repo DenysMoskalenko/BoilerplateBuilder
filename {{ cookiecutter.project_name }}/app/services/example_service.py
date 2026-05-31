@@ -21,7 +21,7 @@ from app.infrastructure.db.database import get_session
 from app.infrastructure.db.filters import apply_contains_filter
 from app.infrastructure.db.models.example import ExampleModel
 {%- if cookiecutter.use_otel_observability == "yes" %}
-from app.observability.metrics import counters
+from app.core.observability.metrics import counters
 {%- endif %}
 
 _logger = getLogger(__name__)

@@ -28,7 +28,7 @@ datasources:
         filterByTraceID: false
         filterBySpanID: false
         customQuery: true
-        # Match by trace ID only and rely on compose_service label added by promtail
+        # Match by trace ID only and rely on compose_service label added by Alloy
         # to keep the query efficient and independent of span IDs in logs.
         query: '{compose_service=~".+"} |= "$traceId"'
       tracesToMetrics:

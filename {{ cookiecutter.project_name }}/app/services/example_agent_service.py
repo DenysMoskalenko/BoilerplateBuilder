@@ -12,8 +12,8 @@ from app.api.v1.agents.schemas import ExampleAgentRequest, ExampleAgentResponse
 from app.services.example_service import ExampleService
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
-from app.observability.metrics import counters, gauges
-from app.observability.metrics.primitives import increment_after, track_inflight
+from app.core.observability.metrics import counters, gauges
+from app.core.observability.metrics.primitives import increment_after, track_inflight
 {%- endif %}
 
 

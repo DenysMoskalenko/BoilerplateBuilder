@@ -24,20 +24,6 @@ def validate_observability_config():
         print("   The local telemetry stack requires observability to be enabled.")
         print("   Please regenerate the project with 'use_otel_observability=yes' or 'generate_local_otel_stack=no'.\n")
 
-        project_dir = Path.cwd()
-        parent_dir = project_dir.parent
-        project_name = project_dir.name
-
-        print(f"🧹 Cleaning up generated project directory '{project_name}'...")
-        try:
-            os.chdir(parent_dir)
-            if project_dir.exists():
-                shutil.rmtree(project_dir)
-                print(f"✓ Removed '{project_name}' directory")
-        except Exception as e:
-            print(f"⚠️  Warning: Could not remove generated directory: {e}")
-            print(f"   Please manually remove '{project_dir}' if needed.")
-
         sys.exit(1)
 
 
@@ -102,7 +88,7 @@ def remove_empty_files():
 
     # --- Observability cleanup ---
     if USE_OTEL != "yes":
-        for p in ("app/observability", "tests/unit/observability", "tests/unit/test_config_validators.py"):
+        for p in ("app/core/observability", "tests/unit/core/observability", "tests/unit/test_config_validators.py"):
             _remove_path(project_root, p)
 
     if GENERATE_LOCAL_STACK != "yes":
@@ -165,12 +151,6 @@ def remove_empty_files():
     # --- docker-compose cleanup ---
     if not IS_DB and GENERATE_LOCAL_STACK != "yes":
         _remove_path(project_root, "docker-compose.yaml")
-
-    # --- Unit tests cleanup (otel-dependent) ---
-    if USE_OTEL != "yes":
-        _remove_path(project_root, "tests/unit")
-    else:
-        _remove_path(project_root, "tests/unit/test_dummy.py")
 
     # --- Optional config files ---
     if USE_PRE_COMMIT != "yes":

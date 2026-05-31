@@ -42,8 +42,8 @@ All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, op
 
 **Observability** (optional, any type):
 - OpenTelemetry tracing, Prometheus metrics, structured JSON logging
-- Custom metric decorators (`@track_inflight`, `@increment_after`)
-- Local dev stack: Grafana, Tempo, Prometheus, Loki, OTEL Collector
+- Custom metric decorators (`@track_inflight`, `@increment_after`, `@increment_on_error`, `@track_latency`)
+- Local dev stack: Grafana, Tempo, Prometheus, Loki, OTEL Collector, Grafana Alloy
 
 ## Generated Project Structure
 
@@ -51,7 +51,7 @@ All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, op
 your-project/
 ├── app/
 │   ├── main.py
-│   ├── core/                          # Config, exceptions, schemas
+│   ├── core/                          # Config, logging, observability, exceptions, schemas
 │   ├── api/
 │   │   ├── health_checks/            # Liveness & readiness probes
 │   │   └── v1/                        # Versioned API
@@ -62,10 +62,9 @@ your-project/
 │   │   ├── db/                        # SQLAlchemy models & filters (db types)
 │   │   └── llms/                      # LLM provider config (agent types)
 │   ├── agents/                        # Agent definitions (agent types)
-│   └── observability/                 # Tracing, metrics, logging (if enabled)
 ├── tests/
 │   ├── api/                           # API integration tests
-│   ├── unit/                          # Unit tests (observability)
+│   ├── unit/                          # Unit tests
 │   └── mocks/                         # Agent test mocks (agent types)
 ├── migrations/                        # Alembic (db types)
 ├── local_telemetry/                   # Grafana stack (if enabled)
@@ -148,7 +147,7 @@ make migration MSG="…"  # Create new migration (db types)
 - **Testing**: [pytest](https://docs.pytest.org/) with async support, [testcontainers](https://testcontainers-python.readthedocs.io/)
 - **Database**: [SQLAlchemy 2.0](https://www.sqlalchemy.org/) + [Alembic](https://alembic.sqlalchemy.org/)
 - **AI agents**: [pydantic-ai](https://github.com/pydantic/pydantic-ai) with OpenAI and AWS Bedrock
-- **Observability**: [OpenTelemetry](https://opentelemetry.io/), Prometheus, Grafana, Tempo, Loki
+- **Observability**: [OpenTelemetry](https://opentelemetry.io/), Prometheus, Grafana, Tempo, Loki, Grafana Alloy
 - **CI/CD**: GitHub Actions with matrix testing across Python 3.11–3.13
 
 ## Contributing
