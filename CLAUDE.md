@@ -22,7 +22,7 @@ See `AGENTS.md` for contributor-facing guidelines (commit/PR conventions, etc.).
 | `project_type` | `fastapi_db_agent` / `fastapi_db` / `fastapi_agent` / `fastapi_slim` | `db_agent` = everything; `slim` = health checks + Docker + tests only |
 | `use_otel_observability` | `no` / `yes` | adds `app/core/observability` + OTEL/Prometheus deps |
 | `generate_local_otel_stack` | `no` / `yes` | **requires `use_otel_observability=yes`** (else the post-gen hook exits 1 and no project is created) |
-| `use_pre_commit`, `use_github_actions`, `initialize_git` | `yes` / `no` | |
+| `use_github_actions`, `initialize_git` | `yes` / `no` | |
 | `python_version` | `3.13` / `3.12` / `3.11` | |
 | `extract_to_current_dir` | `Create New` / `Extract Here` | "Extract Here" merges output into the parent dir, for adding the template to an existing repo |
 
@@ -36,13 +36,13 @@ Three mechanisms decide what a generated project contains. One feature change us
 2. **Jinja in path names** — files/dirs whose entire name is a conditional, e.g. `{%- if cookiecutter.project_type in ["fastapi_db","fastapi_db_agent"] %}alembic.ini{%- endif %}` and everything under `migrations/`. When the condition is false the name renders empty and the path is skipped.
 3. **Post-gen deletion** — `hooks/post_gen_project.py::remove_empty_files()` deletes whole paths not needed for the chosen type (per-type `paths_to_remove` lists) plus the observability / local-telemetry trees. **If you add, move, or rename files for a given type, update these lists.**
 
-After cookiecutter renders, `hooks/post_gen_project.py` runs this pipeline (order matters): validate observability config → extract-to-current-dir → remove unneeded files → write `.env` from `dist.env` → `uv lock && uv sync` (+ `pre-commit install`) → `ruff format` + `ruff check --fix` → blank out whitespace-only `.py` files → strip leading blank lines → `git init` + initial commit → print next steps. Keep this hook idempotent and cross-platform (Python 3.11+).
+After cookiecutter renders, `hooks/post_gen_project.py` runs this pipeline (order matters): validate observability config → extract-to-current-dir → remove unneeded files → write `.env` from `dist.env` → `uv lock && uv sync` → `ruff format` + `ruff check --fix` → blank out whitespace-only `.py` files → strip leading blank lines → `git init` + initial commit → `prek install` (pre-commit hooks, always installed; targets the just-created repo, or an existing one when `initialize_git=no`, e.g. "Extract Here") → print next steps. Keep this hook idempotent and cross-platform (Python 3.11+).
 
 ## Working on the template
 
 ```bash
 # Generate one type to inspect output (skip git/dep side effects for a quick look)
-cookiecutter . --no-input project_type=fastapi_db initialize_git=no use_pre_commit=no
+cookiecutter . --no-input project_type=fastapi_db initialize_git=no
 
 # Canonical validation: generate each type, then uv sync + make lint + make typecheck + make test inside each
 python -m scripts.template_smoke_test                                  # all types, python 3.12, no otel

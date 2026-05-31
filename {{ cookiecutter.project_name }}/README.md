@@ -27,13 +27,16 @@ After start, API docs are available at:
 2. Run tests using `make test` (up dependencies if needed)
 3. Run all checks using `make check` (lint + typecheck + coverage)
 
-### Creation of a pre-commit hook
+### Pre-commit hooks
 
-After you installed all dependencies (including dev dependencies):
+Pre-commit hooks are configured in `.pre-commit-config.yaml` and installed
+automatically when the project is generated, using
+[prek](https://github.com/j178/prek) (a drop-in pre-commit runner). Ruff
+(lint + format) and ty run on every commit.
 
-1. Create `.pre-commit-config.yaml` file with your settings.
-   We usually use [ruff-pre-commit](https://github.com/astral-sh/ruff-pre-commit)
-2. Run `prek install` to activate your pre-commit hook
+If you cloned the repository fresh -- or generated the project with
+`initialize_git=no` outside a git repository -- re-activate the hooks with
+`uv run prek install`.
 
 ### Git setup
 

@@ -24,7 +24,7 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 | **`fastapi_agent`** | FastAPI + AI agent. No database, just an LLM-powered endpoint. |
 | **`fastapi_slim`** | Minimal FastAPI. Health checks, Docker, tests — nothing else. |
 
-All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, optional pre-commit and GitHub Actions.
+All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, pre-commit (via prek), and optional GitHub Actions.
 
 ### What each type adds
 
@@ -93,7 +93,6 @@ All options with defaults:
 | `project_name` | `MyProject` | any string |
 | `project_type` | `fastapi_db_agent` | `fastapi_db_agent`, `fastapi_db`, `fastapi_agent`, `fastapi_slim` |
 | `python_version` | `3.13` | `3.13`, `3.12`, `3.11` |
-| `use_pre_commit` | `yes` | `yes`, `no` |
 | `use_github_actions` | `yes` | `yes`, `no` |
 | `initialize_git` | `yes` | `yes`, `no` |
 | `use_otel_observability` | `no` | `yes`, `no` |

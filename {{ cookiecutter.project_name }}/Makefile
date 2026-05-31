@@ -8,13 +8,16 @@ lint-no-format:
 typecheck:
 	uv run ty check
 
+complexitycheck:
+	uv run complexipy .
+
 test:
 	uv run pytest
 
 test-coverage:
 	uv run pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=90
 
-check: lint typecheck test-coverage
+check: lint typecheck complexitycheck test-coverage
 	@echo "✓ All checks passed"
 
 run:

@@ -100,9 +100,10 @@ def cookiecutter_context(
         'author_email=smoke@test.invalid',
         f'project_type={project_type}',
         f'python_version={python_version}',
-        'use_pre_commit=no',
         'use_github_actions=no',
-        'initialize_git=no',
+        # initialize_git=yes so prek installs hooks into each build's own .git,
+        # not by walking up into this template repo's .git (pre-commit is always on now).
+        'initialize_git=yes',
         f'use_otel_observability={use_otel}',
         f'generate_local_otel_stack={local_stack}',
         'extract_to_current_dir=Create New',

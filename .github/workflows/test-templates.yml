@@ -51,7 +51,6 @@ jobs:
             python_version="${{ matrix.python_version }}" \
             author_name="Test Author" \
             author_email="test@example.com" \
-            use_pre_commit="yes" \
             use_github_actions="yes" \
             initialize_git="no" \
             use_otel_observability="$USE_OTEL_OBSERVABILITY" \
@@ -111,130 +110,123 @@ jobs:
       - name: Test template generation with different options
         run: |
           for project_type in fastapi_db_agent fastapi_db fastapi_agent fastapi_slim; do
-            for pre_commit in yes no; do
-              for github_actions in yes no; do
-                for observability_pair in yes:yes yes:no no:no no:yes; do
-                  IFS=: read -r use_otel generate_local_stack <<< "$observability_pair"
+            for github_actions in yes no; do
+              for observability_pair in yes:yes yes:no no:no no:yes; do
+                IFS=: read -r use_otel generate_local_stack <<< "$observability_pair"
 
-                  echo "Testing: $project_type, pre_commit=$pre_commit," \
-                    "github_actions=$github_actions, observability=$use_otel," \
-                    "local_stack=$generate_local_stack"
+                echo "Testing: $project_type, github_actions=$github_actions," \
+                  "observability=$use_otel, local_stack=$generate_local_stack"
 
-                  project_name="TestProject"
+                project_name="TestProject"
 
-                  if [[ "$use_otel" == "no" && "$generate_local_stack" == "yes" ]]; then
-                    if cookiecutter . --no-input \
-                      project_name="$project_name" \
-                      project_type="$project_type" \
-                      python_version="${{ matrix.python_version }}" \
-                      use_pre_commit="$pre_commit" \
-                      use_github_actions="$github_actions" \
-                      initialize_git="no" \
-                      use_otel_observability="$use_otel" \
-                      generate_local_otel_stack="$generate_local_stack"; then
-                      echo "❌ invalid observability pair should fail early"
-                      exit 1
-                    fi
-
-                    if [[ -d "$project_name" ]]; then
-                      echo "❌ invalid observability pair should not create a project"
-                      exit 1
-                    fi
-
-                    echo "✓ invalid observability pair rejected early"
-                    continue
-                  fi
-
-                  cookiecutter . --no-input \
+                if [[ "$use_otel" == "no" && "$generate_local_stack" == "yes" ]]; then
+                  if cookiecutter . --no-input \
                     project_name="$project_name" \
                     project_type="$project_type" \
                     python_version="${{ matrix.python_version }}" \
-                    use_pre_commit="$pre_commit" \
                     use_github_actions="$github_actions" \
                     initialize_git="no" \
                     use_otel_observability="$use_otel" \
-                    generate_local_otel_stack="$generate_local_stack"
-
-                  # Verify key files exist
-                  if [[ ! -f "$project_name/pyproject.toml" ]]; then
-                    echo "❌ pyproject.toml missing"
+                    generate_local_otel_stack="$generate_local_stack"; then
+                    echo "❌ invalid observability pair should fail early"
                     exit 1
                   fi
 
-                  if [[ ! -f "$project_name/Dockerfile" ]]; then
-                    echo "❌ Dockerfile missing"
+                  if [[ -d "$project_name" ]]; then
+                    echo "❌ invalid observability pair should not create a project"
                     exit 1
                   fi
 
-                  if [[ ! -f "$project_name/Makefile" ]]; then
-                    echo "❌ Makefile missing"
+                  echo "✓ invalid observability pair rejected early"
+                  continue
+                fi
+
+                cookiecutter . --no-input \
+                  project_name="$project_name" \
+                  project_type="$project_type" \
+                  python_version="${{ matrix.python_version }}" \
+                  use_github_actions="$github_actions" \
+                  initialize_git="no" \
+                  use_otel_observability="$use_otel" \
+                  generate_local_otel_stack="$generate_local_stack"
+
+                # Verify key files exist
+                if [[ ! -f "$project_name/pyproject.toml" ]]; then
+                  echo "❌ pyproject.toml missing"
+                  exit 1
+                fi
+
+                if [[ ! -f "$project_name/Dockerfile" ]]; then
+                  echo "❌ Dockerfile missing"
+                  exit 1
+                fi
+
+                if [[ ! -f "$project_name/Makefile" ]]; then
+                  echo "❌ Makefile missing"
+                  exit 1
+                fi
+
+                # Verify conditional files
+                if [[ "$project_type" == "fastapi_db" || "$project_type" == "fastapi_db_agent" ]]; then
+                  if [[ ! -f "$project_name/alembic.ini" ]]; then
+                    echo "❌ alembic.ini missing for database project"
                     exit 1
                   fi
-
-                  # Verify conditional files
-                  if [[ "$project_type" == "fastapi_db" || "$project_type" == "fastapi_db_agent" ]]; then
-                    if [[ ! -f "$project_name/alembic.ini" ]]; then
-                      echo "❌ alembic.ini missing for database project"
-                      exit 1
-                    fi
-                    if [[ ! -f "$project_name/docker-compose.yaml" ]]; then
-                      echo "❌ docker-compose.yaml missing for database project"
-                      exit 1
-                    fi
-                    if [[ ! -d "$project_name/app/infrastructure/db" ]]; then
-                      echo "❌ app/infrastructure/db missing for database project"
-                      exit 1
-                    fi
+                  if [[ ! -f "$project_name/docker-compose.yaml" ]]; then
+                    echo "❌ docker-compose.yaml missing for database project"
+                    exit 1
                   fi
-
-                  if [[ "$project_type" == "fastapi_agent" || "$project_type" == "fastapi_db_agent" ]]; then
-                    if [[ ! -d "$project_name/app/agents" ]]; then
-                      echo "❌ app/agents missing for agent project"
-                      exit 1
-                    fi
-                    if [[ ! -d "$project_name/app/infrastructure/llms" ]]; then
-                      echo "❌ app/infrastructure/llms missing for agent project"
-                      exit 1
-                    fi
+                  if [[ ! -d "$project_name/app/infrastructure/db" ]]; then
+                    echo "❌ app/infrastructure/db missing for database project"
+                    exit 1
                   fi
+                fi
 
-                  if [[ "$pre_commit" == "yes" ]]; then
-                    if [[ ! -f "$project_name/.pre-commit-config.yaml" ]]; then
-                      echo "❌ .pre-commit-config.yaml missing"
-                      exit 1
-                    fi
+                if [[ "$project_type" == "fastapi_agent" || "$project_type" == "fastapi_db_agent" ]]; then
+                  if [[ ! -d "$project_name/app/agents" ]]; then
+                    echo "❌ app/agents missing for agent project"
+                    exit 1
                   fi
-
-                  if [[ "$github_actions" == "yes" ]]; then
-                    if [[ ! -f "$project_name/.github/workflows/pull_request.yml" ]]; then
-                      echo "❌ .github/workflows/pull_request.yml missing"
-                      exit 1
-                    fi
+                  if [[ ! -d "$project_name/app/infrastructure/llms" ]]; then
+                    echo "❌ app/infrastructure/llms missing for agent project"
+                    exit 1
                   fi
+                fi
 
-                  if [[ "$use_otel" == "yes" ]]; then
-                    if [[ ! -d "$project_name/app/core/observability" ]]; then
-                      echo "❌ app/core/observability should exist when observability is enabled"
-                      exit 1
-                    fi
-                    if [[ "$generate_local_stack" == "yes" && ! -d "$project_name/local_telemetry" ]]; then
-                      echo "❌ local_telemetry should exist when local stack is enabled"
-                      exit 1
-                    fi
-                  else
-                    if [[ -d "$project_name/app/core/observability" ]]; then
-                      echo "❌ app/core/observability should not exist when observability is disabled"
-                      exit 1
-                    fi
-                    if [[ -d "$project_name/local_telemetry" ]]; then
-                      echo "❌ local_telemetry should not exist when observability is disabled"
-                      exit 1
-                    fi
+                if [[ ! -f "$project_name/.pre-commit-config.yaml" ]]; then
+                  echo "❌ .pre-commit-config.yaml missing"
+                  exit 1
+                fi
+
+                if [[ "$github_actions" == "yes" ]]; then
+                  if [[ ! -f "$project_name/.github/workflows/pull_request.yml" ]]; then
+                    echo "❌ .github/workflows/pull_request.yml missing"
+                    exit 1
                   fi
+                fi
 
-                  echo "✓ $project_type generation successful (observability=$use_otel)"
-                  rm -rf "$project_name"
-                done
+                if [[ "$use_otel" == "yes" ]]; then
+                  if [[ ! -d "$project_name/app/core/observability" ]]; then
+                    echo "❌ app/core/observability should exist when observability is enabled"
+                    exit 1
+                  fi
+                  if [[ "$generate_local_stack" == "yes" && ! -d "$project_name/local_telemetry" ]]; then
+                    echo "❌ local_telemetry should exist when local stack is enabled"
+                    exit 1
+                  fi
+                else
+                  if [[ -d "$project_name/app/core/observability" ]]; then
+                    echo "❌ app/core/observability should not exist when observability is disabled"
+                    exit 1
+                  fi
+                  if [[ -d "$project_name/local_telemetry" ]]; then
+                    echo "❌ local_telemetry should not exist when observability is disabled"
+                    exit 1
+                  fi
+                fi
+
+                echo "✓ $project_type generation successful (observability=$use_otel)"
+                rm -rf "$project_name"
               done
             done
           done
