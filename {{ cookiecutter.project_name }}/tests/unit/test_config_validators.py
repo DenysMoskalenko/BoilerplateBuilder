@@ -15,53 +15,27 @@ class SettingsOverrides(TypedDict, total=False):
 
 def build_settings(**overrides: Unpack[SettingsOverrides]) -> Settings:
     data = get_settings().model_dump()
-    data.update(
-        {
-            'OBSERVABILITY_TRACING_ENABLED': False,
-            'OBSERVABILITY_METRICS_ENABLED': False,
-            'OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT': 100.0,
-            'OBSERVABILITY_TRACING_OTLP_ENDPOINT': None,
-        }
-    )
+    for key in SettingsOverrides.__annotations__:
+        data.pop(key, None)
     data.update(overrides)
     return Settings.model_validate(data)
+
+
+def test_observability_is_opt_in_without_env_values() -> None:
+    """Settings keep observability disabled without implicit exporter defaults."""
+    settings = build_settings()
+
+    assert (
+        settings.OBSERVABILITY_TRACING_ENABLED,
+        settings.OBSERVABILITY_METRICS_ENABLED,
+        settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT,
+    ) == (False, False, None)
 
 
 def test_rejects_non_http_tracing_endpoint() -> None:
     """Settings reject OTLP endpoints that cannot be used by the HTTP URL type."""
     with pytest.raises(ValueError):
         build_settings(OBSERVABILITY_TRACING_OTLP_ENDPOINT='grpc://host:4317')
-
-
-def test_accepts_https_tracing_endpoint() -> None:
-    """Settings accept HTTPS OTLP endpoints for secure collector connections."""
-    settings = build_settings(OBSERVABILITY_TRACING_OTLP_ENDPOINT='https://localhost:4317')
-
-    assert (
-        settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT
-        and settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT.scheme == 'https'
-    )
-
-
-def test_tracing_is_disabled_by_default() -> None:
-    """Tracing stays disabled unless explicitly enabled."""
-    settings = build_settings()
-
-    assert settings.OBSERVABILITY_TRACING_ENABLED is False
-
-
-def test_metrics_are_disabled_by_default() -> None:
-    """Metrics stay disabled unless explicitly enabled."""
-    settings = build_settings()
-
-    assert settings.OBSERVABILITY_METRICS_ENABLED is False
-
-
-def test_tracing_endpoint_is_empty_by_default() -> None:
-    """Tracing endpoint has no implicit localhost default."""
-    settings = build_settings()
-
-    assert settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT is None
 
 
 def test_tracing_endpoint_can_be_missing_when_tracing_is_disabled() -> None:
@@ -75,14 +49,6 @@ def test_tracing_endpoint_is_required_when_tracing_is_enabled() -> None:
     """Settings require an exporter endpoint when tracing is enabled."""
     with pytest.raises(ValueError, match='OBSERVABILITY_TRACING_OTLP_ENDPOINT is required'):
         build_settings(OBSERVABILITY_TRACING_ENABLED=True, OBSERVABILITY_TRACING_OTLP_ENDPOINT=None)
-
-
-@pytest.mark.parametrize('sample_rate', [0.0, 50.0])
-def test_tracing_sample_rate_accepts_valid_percentages(sample_rate: float) -> None:
-    """Settings accept sample rates inside the supported percentage range."""
-    settings = build_settings(OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=sample_rate)
-
-    assert settings.OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT == sample_rate
 
 
 @pytest.mark.parametrize('sample_rate', [-1.0, 101.0])

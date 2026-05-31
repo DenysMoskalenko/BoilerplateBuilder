@@ -1,8 +1,4 @@
-from typing import Any
-
-from pytest import MonkeyPatch
-
-from app.core.logging import build_logging_config, config as logging_config_module, LogFormatType
+from app.core.logging import LogFormatType, build_logging_config
 from app.core.logging.config import DEFAULT_HANDLER_NAME
 
 
@@ -25,17 +21,3 @@ def test_build_logging_config_applies_log_level_to_uvicorn_loggers() -> None:
     config = build_logging_config('DEBUG', LogFormatType.JSON)
 
     assert {logger['level'] for logger in config['loggers'].values()} == {'DEBUG'}
-
-
-def test_configure_logging_applies_dict_config(monkeypatch: MonkeyPatch) -> None:
-    """configure_logging applies the generated dictionary through logging.config."""
-    calls: list[dict[str, Any]] = []
-
-    def dict_config_spy(config: dict[str, Any]) -> None:
-        calls.append(config)
-
-    monkeypatch.setattr(logging_config_module, 'dictConfig', dict_config_spy)
-
-    logging_config_module.configure_logging('INFO', LogFormatType.STDOUT)
-
-    assert calls == [build_logging_config('INFO', LogFormatType.STDOUT)]

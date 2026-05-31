@@ -70,7 +70,6 @@ def track_latency(histogram: Histogram) -> Callable[[Callable[P, T]], Callable[P
 @overload
 def _wrap_with_hooks(
     func: Callable[P, Awaitable[T]],
-    *,
     before: Hook,
     after: Hook,
     on_exception: Hook = None,
@@ -80,7 +79,6 @@ def _wrap_with_hooks(
 @overload
 def _wrap_with_hooks(
     func: Callable[P, T],
-    *,
     before: Hook,
     after: Hook,
     on_exception: Hook = None,
@@ -89,11 +87,11 @@ def _wrap_with_hooks(
 
 def _wrap_with_hooks(
     func: Callable[P, T] | Callable[P, Awaitable[T]],
-    *,
     before: Hook,
     after: Hook,
     on_exception: Hook = None,
 ) -> Callable[P, T] | Callable[P, Awaitable[T]]:
+    """Apply the same metric hooks around sync and async callables."""
     if inspect.iscoroutinefunction(func):
         async_func = cast(Callable[P, Awaitable[T]], func)
 
@@ -115,7 +113,8 @@ def _wrap_with_hooks(
 
 
 @contextmanager
-def _hook_scope(*, before: Hook, after: Hook, on_exception: Hook) -> Generator[None, None, None]:
+def _hook_scope(before: Hook, after: Hook, on_exception: Hook) -> Generator[None, None, None]:
+    """Run metric hooks in the correct order around a decorated function call."""
     if before:
         before()
     try:
@@ -131,6 +130,7 @@ def _hook_scope(*, before: Hook, after: Hook, on_exception: Hook) -> Generator[N
 
 @contextmanager
 def _observe_latency(histogram: Histogram) -> Generator[None, None, None]:
+    """Record call duration even when the wrapped function raises."""
     start = time.perf_counter()
     try:
         yield

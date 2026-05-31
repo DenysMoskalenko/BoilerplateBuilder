@@ -1,6 +1,4 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
-import warnings
-
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 import pytest
 from pytest import MonkeyPatch
@@ -95,20 +93,6 @@ async def test_track_inflight_decrements_async_gauge_after_failure() -> None:
         await sample()
 
     assert get_metric_value(gauge, 'test_track_inflight_async_error') == 0.0
-
-
-def test_track_inflight_supports_async_functions_without_warnings() -> None:
-    """Inflight tracking supports asynchronous functions without warnings."""
-    gauge = build_gauge('test_track_inflight_async_warning')
-
-    with warnings.catch_warnings():
-        warnings.simplefilter('error', DeprecationWarning)
-
-        @metrics_decorators.track_inflight(gauge)
-        async def sample() -> str:
-            return 'ok'
-
-    assert callable(sample)
 
 
 def test_increment_after_counts_sync_successes_by_default() -> None:

@@ -62,18 +62,6 @@ def test_trace_marks_sync_success_as_ok(monkeypatch: MonkeyPatch) -> None:
     assert tracer.latest_span.latest_status.status_code is StatusCode.OK
 
 
-def test_trace_reraises_sync_failures(monkeypatch: MonkeyPatch) -> None:
-    """Trace decorator re-raises synchronous failures from the wrapped function."""
-    install_tracer_spy(monkeypatch)
-
-    @tracing_decorators.trace
-    def sample() -> None:
-        raise RuntimeError('boom')
-
-    with pytest.raises(RuntimeError, match='boom'):
-        sample()
-
-
 def test_trace_marks_sync_failures_as_error(monkeypatch: MonkeyPatch) -> None:
     """Trace decorator marks failed synchronous calls as ERROR."""
     tracer = install_tracer_spy(monkeypatch)

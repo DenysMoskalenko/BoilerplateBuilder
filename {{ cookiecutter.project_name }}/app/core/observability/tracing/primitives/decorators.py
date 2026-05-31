@@ -52,6 +52,7 @@ def trace(
 
 @contextmanager
 def _trace_span(span_name: str, func_name: str) -> Generator[None, None, None]:
+    """Create a span around a decorated call and mark it by outcome."""
     with tracer.start_as_current_span(span_name) as span:
         span.set_attribute('code.function', func_name)
         try:

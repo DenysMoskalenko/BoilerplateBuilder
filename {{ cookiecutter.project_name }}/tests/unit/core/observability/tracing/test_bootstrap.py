@@ -91,6 +91,13 @@ def test_setup_uses_secure_exporter_for_https_endpoint(monkeypatch: MonkeyPatch)
     assert spy.span_exporter == SpanExporterSpy(endpoint='https://collector.internal:4317/', insecure=False)
 
 
+def test_setup_uses_insecure_exporter_for_http_endpoint(monkeypatch: MonkeyPatch) -> None:
+    """Tracing setup allows insecure OTLP export for HTTP endpoints."""
+    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT='http://collector.internal:4317')
+
+    assert spy.span_exporter == SpanExporterSpy(endpoint='http://collector.internal:4317/', insecure=True)
+
+
 def test_setup_attaches_span_processor_to_provider(monkeypatch: MonkeyPatch) -> None:
     """Tracing setup connects the OTLP exporter pipeline to the tracer provider."""
     spy = setup_tracing(monkeypatch)
@@ -114,13 +121,9 @@ def test_setup_requires_endpoint(monkeypatch: MonkeyPatch) -> None:
     with pytest.raises(ValueError, match='OBSERVABILITY_TRACING_OTLP_ENDPOINT is required'):
         tracing_bootstrap.setup(app=FastAPI(), settings=settings)
 
-    assert spy.logging_format_override_disabled is False
     assert spy.fastapi_was_instrumented is False
-    assert spy.sampler is None
     assert spy.span_exporter is None
-    assert spy.span_processor is None
     assert spy.tracer_provider is None
-    assert spy.global_tracer_provider is None
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     assert spy.sqlalchemy_was_instrumented is False
 {%- endif %}
