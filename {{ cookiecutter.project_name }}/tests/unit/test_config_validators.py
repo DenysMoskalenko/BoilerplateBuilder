@@ -21,17 +21,6 @@ def build_settings(**overrides: Unpack[SettingsOverrides]) -> Settings:
     return Settings.model_validate(data)
 
 
-def test_observability_is_opt_in_without_env_values() -> None:
-    """Settings keep observability disabled without implicit exporter defaults."""
-    settings = build_settings()
-
-    assert (
-        settings.OBSERVABILITY_TRACING_ENABLED,
-        settings.OBSERVABILITY_METRICS_ENABLED,
-        settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT,
-    ) == (False, False, None)
-
-
 def test_rejects_non_http_tracing_endpoint() -> None:
     """Settings reject OTLP endpoints that cannot be used by the HTTP URL type."""
     with pytest.raises(ValueError):

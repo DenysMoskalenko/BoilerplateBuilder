@@ -150,11 +150,11 @@
             ~ "```python\n"
             ~ "from app.core.observability.metrics import counters\n"
             ~ "from app.core.observability.metrics.primitives import increment_after\n\n"
-            ~ "@increment_after(counters.example_operations_total.labels('my_operation'))\n"
+            ~ "@increment_after(counters.http_business_requests_total)\n"
             ~ "async def my_function():\n"
             ~ "    pass\n"
             ~ "```\n\n"
-            ~ "Then add a panel with query: `increase(example_operations_total[$__range])`"
+            ~ "Then add a panel with query: `increase(http_business_requests_total[$__range])`"
           ) | tojson
         }}{% raw %},
         "mode": "markdown"
