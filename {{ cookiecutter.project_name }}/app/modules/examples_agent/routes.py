@@ -4,10 +4,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from pydantic_ai import Agent
 
-from app.agents.examples_agent.agents import get_examples_agent
-from app.agents.examples_agent.schemas import ExampleAgentDeps
-from app.api.v1.agents.schemas import ExampleAgentRequest, ExampleAgentResponse
-from app.services.example_agent_service import ExampleAgentService
+from app.modules.examples_agent.agents import get_examples_agent
+from app.modules.examples_agent.schemas import ExampleAgentDeps, ExampleAgentRequest, ExampleAgentResponse
+from app.modules.examples_agent.service import ExampleAgentService
 
 router = APIRouter(tags=['Examples Agent'])
 

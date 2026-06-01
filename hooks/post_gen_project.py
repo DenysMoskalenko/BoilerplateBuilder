@@ -97,10 +97,9 @@ def remove_empty_files():
     if PROJECT_TYPE == "fastapi_slim":
         paths_to_remove = [
             "app/infrastructure",
-            "app/services",
-            "app/agents",
-            "app/api/v1",
-            "app/api/health_checks/checks.py",
+            "app/modules/examples",
+            "app/modules/examples_agent",
+            "app/modules/health_checks/service.py",
             "app/core/enums.py",
             "app/core/schemas.py",
             "app/core/exceptions.py",
@@ -119,9 +118,7 @@ def remove_empty_files():
     elif PROJECT_TYPE == "fastapi_db":
         paths_to_remove = [
             "app/infrastructure/llms",
-            "app/agents",
-            "app/api/v1/agents",
-            "app/services/example_agent_service.py",
+            "app/modules/examples_agent",
             "app/core/enums.py",
             "tests/api/test_agents.py",
             "tests/mocks",
@@ -132,8 +129,7 @@ def remove_empty_files():
     elif PROJECT_TYPE == "fastapi_agent":
         paths_to_remove = [
             "app/infrastructure/db",
-            "app/api/v1/examples",
-            "app/services/example_service.py",
+            "app/modules/examples",
             "app/core/schemas.py",
             "app/core/exceptions.py",
             "app/core/lifespan.py",

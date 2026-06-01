@@ -51,17 +51,20 @@ All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, pr
 your-project/
 ├── app/
 │   ├── main.py
+│   ├── router.py                      # Aggregates module routers (create_router)
 │   ├── core/                          # Config, logging, observability, exceptions, schemas
-│   ├── api/
-│   │   ├── health_checks/            # Liveness & readiness probes
-│   │   └── v1/                        # Versioned API
-│   │       ├── examples/              # Example CRUD routes (db types)
-│   │       └── agents/                # Agent conversation routes (agent types)
-│   ├── services/                      # Business logic layer
-│   ├── infrastructure/
-│   │   ├── db/                        # SQLAlchemy models & filters (db types)
+│   ├── infrastructure/                # Technical adapters
+│   │   ├── db/
+│   │   │   └── models/                # All SQLAlchemy models (db types)
 │   │   └── llms/                      # LLM provider config (agent types)
-│   ├── agents/                        # Agent definitions (agent types)
+│   └── modules/                       # Business logic, one vertical slice per feature
+│       ├── README.md                  # Module conventions
+│       ├── health_checks/             # Liveness & readiness probes (routes + schemas + service)
+│       ├── examples/                  # Example CRUD feature (db types)
+│       └── examples_agent/            # Example AI agent feature (agent types)
+│           ├── agents.py              # Agent construction & tools
+│           ├── prompts.py
+│           └── schemas/               # API contract + agent/tool I/O (facade subpackage)
 ├── tests/
 │   ├── api/                           # API integration tests
 │   ├── unit/                          # Unit tests

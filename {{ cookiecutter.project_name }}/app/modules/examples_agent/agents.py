@@ -1,4 +1,4 @@
-{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from collections.abc import Sequence
 {%- endif %}
@@ -12,20 +12,21 @@ from pydantic_ai import Agent, ModelSettings, RunContext
 from pydantic_ai.models import Model
 from pydantic_ai.models.bedrock import BedrockConverseModel, BedrockModelSettings
 
-from app.agents.examples_agent.prompts import EXAMPLE_AGENT_SYSTEM_PROMPT
-from app.agents.examples_agent.schemas import (
+from app.infrastructure.llms.llm_models import get_llm_models_registry, ModelRegistry
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+from app.modules.examples.schemas import Example, ExampleListSorting
+{%- endif %}
+from app.modules.examples_agent.prompts import EXAMPLE_AGENT_SYSTEM_PROMPT
+from app.modules.examples_agent.schemas import (
     ExampleAgentDeps,
+    ExampleAgentRequest,
+    ExampleAgentResponse,
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
     CountExamplesToolInput,
     ExampleAgentToolExample,
     ListExamplesToolInput,
 {%- endif %}
 )
-{%- if cookiecutter.project_type == "fastapi_db_agent" %}
-from app.api.v1.examples.schemas import Example, ExampleListSorting
-{%- endif %}
-from app.api.v1.agents.schemas import ExampleAgentRequest, ExampleAgentResponse
-from app.infrastructure.llms.llm_models import get_llm_models_registry, ModelRegistry
 
 
 def get_examples_agent(

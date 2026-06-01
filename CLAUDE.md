@@ -65,13 +65,14 @@ Commands (from the generated `Makefile`, run **inside** a generated project):
 - db types: `make up-dependencies` (docker-compose Postgres) · `make migrate` · `make migration MSG="…"` · `make upgrade` · `make downgrade`
 - single test: `uv run pytest tests/api/test_examples.py::test_name -v`
 
-Layered FastAPI app under `app/`:
+Package-by-feature FastAPI app under `app/`: business logic lives in vertical slices under `modules/`; cross-cutting technical code stays in `core/` and `infrastructure/`.
 
-- **Entry / wiring** — `main.py::create_app()` is the app factory. `api/v1/router.py` aggregates the `examples` (db) and `agents` (agent) routers; `api/health_checks` is always present. Exception handlers are registered **last**, after routers and middleware.
+- **Entry / wiring** — `main.py::create_app()` is the app factory. `router.py::create_router()` aggregates the module routers: `health_checks` (always, at root) plus `examples` (db) and `examples_agent` (agent) under `/v1`. Exception handlers are registered **last**, after routers and middleware.
 - **Config** — `core/config.py`: a frozen pydantic-settings `Settings`, exposed via `@lru_cache get_settings()`, loaded from `.env`.
 - **Dependency Injection via FastAPI `Depends` throughout** — services receive collaborators in `__init__` (`Annotated[AsyncSession, Depends(get_session)]`); routes inject services with `Annotated[ExampleService, Depends()]`. Convention: public methods at the top of a class, private `_helpers` at the bottom.
-- **`services/`** business logic; **`infrastructure/db`** (async SQLAlchemy 2.0, Alembic, fastapi-pagination) and **`infrastructure/llms`** (OpenAI + Bedrock model registry).
-- **`agents/`** (pydantic-ai) — `build_examples_agent(model)` constructs the `Agent`, `get_examples_agent` is its FastAPI dependency, tools are registered with `@agent.tool`.
+- **`modules/<feature>/`** — one vertical slice per feature (`routes.py` + `schemas.py` + `service.py`), each module flat until a concern genuinely needs 2+ files (then it grows a subpackage with a facade `__init__.py`; the `examples_agent` module's `schemas/` split into `schemas_api.py` + `schemas_agent.py` is the reference). `modules/README.md` documents the conventions. Shipped modules: `health_checks` (all types), `examples` (db), `examples_agent` (agent).
+- **`infrastructure/db`** (async SQLAlchemy 2.0, Alembic, fastapi-pagination; **all** models live in `db/models/` for single-metadata autogeneration) and **`infrastructure/llms`** (OpenAI + Bedrock model registry).
+- **`modules/examples_agent/`** (pydantic-ai) — `build_examples_agent(model)` constructs the `Agent`, `get_examples_agent` is its FastAPI dependency, tools are registered with `@agent.tool`.
 - **`core/observability/`** (optional) — wired by `observability.setup(app, settings)`; OTEL tracing + Prometheus metrics, with decorators `@track_inflight`, `@increment_after`, `@increment_on_error`, `@track_latency`. Structured JSON logging lives in `core/logging`.
 - db migrations can auto-run on startup via `core/lifespan.py` (`MIGRATION_ON_STARTUP`).
 

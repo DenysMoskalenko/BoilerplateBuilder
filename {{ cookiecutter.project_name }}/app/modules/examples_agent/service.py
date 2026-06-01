@@ -1,4 +1,4 @@
-{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from typing import Annotated
 
@@ -6,10 +6,9 @@ from fastapi import Depends
 {%- endif %}
 from pydantic_ai import Agent
 
-from app.agents.examples_agent.schemas import ExampleAgentDeps
-from app.api.v1.agents.schemas import ExampleAgentRequest, ExampleAgentResponse
+from app.modules.examples_agent.schemas import ExampleAgentDeps, ExampleAgentRequest, ExampleAgentResponse
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
-from app.services.example_service import ExampleService
+from app.modules.examples.service import ExampleService
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
 from app.core.observability.metrics import counters, gauges

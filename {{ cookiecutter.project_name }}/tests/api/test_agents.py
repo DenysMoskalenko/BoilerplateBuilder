@@ -7,9 +7,8 @@ from openai import APIConnectionError, RateLimitError
 from pydantic_ai import Agent
 import pytest
 
-from app.agents.examples_agent.schemas import ExampleAgentDeps
-from app.api.v1.agents.schemas import ExampleAgentResponse
 from app.core.enums import AIModelName
+from app.modules.examples_agent.schemas import ExampleAgentDeps, ExampleAgentResponse
 from tests.mocks.agent_mocks import build_mock_model, build_raising_model
 
 

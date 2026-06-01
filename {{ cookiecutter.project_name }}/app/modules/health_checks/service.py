@@ -18,7 +18,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 {%- endif %}
 
-from app.api.health_checks.schemas import LivenessStatus, ReadinessStatus
+from app.modules.health_checks.schemas import LivenessStatus, ReadinessStatus
 
 _logger = logging.getLogger(__name__)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}

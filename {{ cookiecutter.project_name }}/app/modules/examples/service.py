@@ -9,17 +9,17 @@ from pydantic import TypeAdapter
 from sqlalchemy import delete, func, insert, Select, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.examples.schemas import (
+from app.core.exceptions import AlreadyExistError, NotFoundError
+from app.infrastructure.db.database import get_session
+from app.infrastructure.db.filters import apply_contains_filter
+from app.infrastructure.db.models.example import ExampleModel
+from app.modules.examples.schemas import (
     Example,
     ExampleCreate,
     ExampleListFilters,
     ExampleListSorting,
     ExampleUpdate,
 )
-from app.core.exceptions import AlreadyExistError, NotFoundError
-from app.infrastructure.db.database import get_session
-from app.infrastructure.db.filters import apply_contains_filter
-from app.infrastructure.db.models.example import ExampleModel
 {%- if cookiecutter.use_otel_observability == "yes" %}
 from app.core.observability.metrics import counters
 {%- endif %}

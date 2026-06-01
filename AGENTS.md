@@ -4,6 +4,7 @@
 - This repository is a Cookiecutter template for production-ready FastAPI projects (types: `fastapi_db_agent`, `fastapi_db`, `fastapi_agent`, `fastapi_slim`).
 - Key paths: `cookiecutter.json`, `hooks/`, `{{ cookiecutter.project_name }}/` (template source), `.github/`, `.pre-commit-config.yaml`, `README.md`.
 - The template mirrors generated projects: `app/`, `tests/`, `migrations/` (DB types), `Dockerfile`, `docker-compose.yaml` (DB types), `Makefile`, `pyproject.toml`.
+- Generated `app/` is **package-by-feature**: business logic lives in vertical slices under `app/modules/<feature>/` (`routes.py` + `schemas.py` + `service.py`, growing a facade subpackage only when a concern needs 2+ files), while cross-cutting technical code stays in `app/core/` and `app/infrastructure/` (all SQLAlchemy models centralised in `app/infrastructure/db/models/`). Routers are aggregated in `app/router.py::create_router()`. Shipped modules: `health_checks` (all types), `examples` (db types), `examples_agent` (agent types); see `app/modules/README.md`. When you move or rename module files, update the per-type `paths_to_remove` lists in `hooks/post_gen_project.py`.
 
 ## Build, Test, and Development Commands
 - Generate a project: `cookiecutter .` or `cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder`.

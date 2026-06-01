@@ -180,11 +180,15 @@ jobs:
                     echo "❌ app/infrastructure/db missing for database project"
                     exit 1
                   fi
+                  if [[ ! -d "$project_name/app/modules/examples" ]]; then
+                    echo "❌ app/modules/examples missing for database project"
+                    exit 1
+                  fi
                 fi
 
                 if [[ "$project_type" == "fastapi_agent" || "$project_type" == "fastapi_db_agent" ]]; then
-                  if [[ ! -d "$project_name/app/agents" ]]; then
-                    echo "❌ app/agents missing for agent project"
+                  if [[ ! -d "$project_name/app/modules/examples_agent" ]]; then
+                    echo "❌ app/modules/examples_agent missing for agent project"
                     exit 1
                   fi
                   if [[ ! -d "$project_name/app/infrastructure/llms" ]]; then
