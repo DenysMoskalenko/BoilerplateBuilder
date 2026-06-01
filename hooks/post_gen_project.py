@@ -9,7 +9,6 @@ from pathlib import Path
 
 PROJECT_TYPE = "{{ cookiecutter.project_type }}"
 USE_OTEL = "{{ cookiecutter.use_otel_observability }}"
-USE_PRE_COMMIT = "{{ cookiecutter.use_pre_commit }}"
 GENERATE_LOCAL_STACK = "{{ cookiecutter.generate_local_otel_stack }}"
 
 IS_DB = PROJECT_TYPE in ("fastapi_db", "fastapi_db_agent")
@@ -98,10 +97,9 @@ def remove_empty_files():
     if PROJECT_TYPE == "fastapi_slim":
         paths_to_remove = [
             "app/infrastructure",
-            "app/services",
-            "app/agents",
-            "app/api/v1",
-            "app/api/health_checks/checks.py",
+            "app/modules/examples",
+            "app/modules/examples_agent",
+            "app/modules/health_checks/service.py",
             "app/core/enums.py",
             "app/core/schemas.py",
             "app/core/exceptions.py",
@@ -120,9 +118,7 @@ def remove_empty_files():
     elif PROJECT_TYPE == "fastapi_db":
         paths_to_remove = [
             "app/infrastructure/llms",
-            "app/agents",
-            "app/api/v1/agents",
-            "app/services/example_agent_service.py",
+            "app/modules/examples_agent",
             "app/core/enums.py",
             "tests/api/test_agents.py",
             "tests/mocks",
@@ -133,8 +129,7 @@ def remove_empty_files():
     elif PROJECT_TYPE == "fastapi_agent":
         paths_to_remove = [
             "app/infrastructure/db",
-            "app/api/v1/examples",
-            "app/services/example_service.py",
+            "app/modules/examples",
             "app/core/schemas.py",
             "app/core/exceptions.py",
             "app/core/lifespan.py",
@@ -151,10 +146,6 @@ def remove_empty_files():
     # --- docker-compose cleanup ---
     if not IS_DB and GENERATE_LOCAL_STACK != "yes":
         _remove_path(project_root, "docker-compose.yaml")
-
-    # --- Optional config files ---
-    if USE_PRE_COMMIT != "yes":
-        _remove_path(project_root, ".pre-commit-config.yaml")
 
     ci_workflow_path = project_root / ".github/workflows/ci.yml"
     if ci_workflow_path.exists() and ci_workflow_path.stat().st_size == 0:
@@ -202,19 +193,30 @@ def install_dependencies():
 
         subprocess.run(["uv", "sync"], check=True)
         print("✓ Dependencies installed successfully!")
-
-        if Path(".pre-commit-config.yaml").exists() and Path(".git").exists():
-            try:
-                subprocess.run(["uv", "run", "pre-commit", "install"], check=True, capture_output=True)
-                print("✓ Pre-commit hooks installed")
-            except subprocess.CalledProcessError:
-                print("⚠ Failed to install pre-commit hooks")
-        elif Path(".pre-commit-config.yaml").exists() and not Path(".git").exists():
-            print("⚠ Skipping pre-commit hooks installation (git not initialized)")
     except FileNotFoundError:
         print("⚠ uv not found. Please install uv and run 'uv lock && uv sync' to install dependencies")
     except subprocess.CalledProcessError as e:
         print(f"⚠ Failed to install dependencies: {e}")
+
+
+def install_pre_commit_hooks():
+    """Install git pre-commit hooks via prek.
+
+    Always attempted — pre-commit is part of every generated project — even if
+    we skipped `git init`, because the project may have been generated into an
+    existing repository ("Extract Here", or "Create New" inside a repo). prek/git
+    find the repo by walking up from the current directory, so we let prek decide
+    rather than pre-checking for a local .git; if there is no repository, prek
+    exits non-zero and we surface a hint instead. The dev dependency is `prek`
+    (a drop-in pre-commit runner), so the command is `prek`, not `pre-commit`.
+    """
+    try:
+        subprocess.run(["uv", "run", "prek", "install"], check=True, capture_output=True)
+        print("✓ Pre-commit hooks installed")
+    except FileNotFoundError:
+        print("⚠ Skipping pre-commit hooks installation (uv not found)")
+    except subprocess.CalledProcessError:
+        print("⚠ Skipping pre-commit hooks installation (no git repository found — run 'uv run prek install' once inside your repo)")
 
 
 def create_env_file():
@@ -380,6 +382,7 @@ def main():
     remove_empty_python_files_content()
     remove_leading_empty_lines()
     initialize_git()
+    install_pre_commit_hooks()
     display_success_message()
 
 

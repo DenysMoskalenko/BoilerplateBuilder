@@ -24,7 +24,7 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 | **`fastapi_agent`** | FastAPI + AI agent. No database, just an LLM-powered endpoint. |
 | **`fastapi_slim`** | Minimal FastAPI. Health checks, Docker, tests — nothing else. |
 
-All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, optional pre-commit and GitHub Actions.
+All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, pre-commit (via prek), and optional GitHub Actions.
 
 ### What each type adds
 
@@ -51,17 +51,20 @@ All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, op
 your-project/
 ├── app/
 │   ├── main.py
+│   ├── router.py                      # Aggregates module routers (create_router)
 │   ├── core/                          # Config, logging, observability, exceptions, schemas
-│   ├── api/
-│   │   ├── health_checks/            # Liveness & readiness probes
-│   │   └── v1/                        # Versioned API
-│   │       ├── examples/              # Example CRUD routes (db types)
-│   │       └── agents/                # Agent conversation routes (agent types)
-│   ├── services/                      # Business logic layer
-│   ├── infrastructure/
-│   │   ├── db/                        # SQLAlchemy models & filters (db types)
+│   ├── infrastructure/                # Technical adapters
+│   │   ├── db/
+│   │   │   └── models/                # All SQLAlchemy models (db types)
 │   │   └── llms/                      # LLM provider config (agent types)
-│   ├── agents/                        # Agent definitions (agent types)
+│   └── modules/                       # Business logic, one vertical slice per feature
+│       ├── README.md                  # Module conventions
+│       ├── health_checks/             # Liveness & readiness probes (routes + schemas + service)
+│       ├── examples/                  # Example CRUD feature (db types)
+│       └── examples_agent/            # Example AI agent feature (agent types)
+│           ├── agents.py              # Agent construction & tools
+│           ├── prompts.py
+│           └── schemas/               # API contract + agent/tool I/O (facade subpackage)
 ├── tests/
 │   ├── api/                           # API integration tests
 │   ├── unit/                          # Unit tests
@@ -93,7 +96,6 @@ All options with defaults:
 | `project_name` | `MyProject` | any string |
 | `project_type` | `fastapi_db_agent` | `fastapi_db_agent`, `fastapi_db`, `fastapi_agent`, `fastapi_slim` |
 | `python_version` | `3.13` | `3.13`, `3.12`, `3.11` |
-| `use_pre_commit` | `yes` | `yes`, `no` |
 | `use_github_actions` | `yes` | `yes`, `no` |
 | `initialize_git` | `yes` | `yes`, `no` |
 | `use_otel_observability` | `no` | `yes`, `no` |

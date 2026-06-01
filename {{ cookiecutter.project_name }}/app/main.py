@@ -3,11 +3,7 @@ from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 {%- endif %}
 import uvicorn
-{%- if cookiecutter.project_type != "fastapi_slim" %}
 
-from app.api.v1.router import router as v1_router
-{%- endif %}
-from app.api.health_checks.routes import router as health_checks_router
 from app.core.config import get_settings
 from app.core.logging import build_logging_config, configure_logging
 {%- if cookiecutter.project_type != "fastapi_slim" %}
@@ -19,6 +15,7 @@ from app.core.lifespan import lifespan
 {%- if cookiecutter.use_otel_observability == "yes" %}
 from app.core import observability
 {%- endif %}
+from app.router import create_router
 
 
 def create_app() -> FastAPI:
@@ -36,10 +33,7 @@ def create_app() -> FastAPI:
 {%- if cookiecutter.use_otel_observability == "yes" %}
     observability.setup(app=_app, settings=settings)
 {%- endif %}
-{%- if cookiecutter.project_type != "fastapi_slim" %}
-    _app.include_router(v1_router)
-{%- endif %}
-    _app.include_router(health_checks_router)
+    _app.include_router(create_router())
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     add_pagination(_app)
 {%- endif %}
@@ -52,12 +46,12 @@ def create_app() -> FastAPI:
 
 
 if __name__ == '__main__':
-    settings = get_settings()
+    _settings = get_settings()
     uvicorn.run(
         'app.main:create_app',
         factory=True,
         host='0.0.0.0',  # noqa: S104
         port=8000,
-        log_level=settings.LOG_LEVEL.lower(),
-        log_config=build_logging_config(settings.LOG_LEVEL, settings.LOG_FORMAT),
+        log_level=_settings.LOG_LEVEL.lower(),
+        log_config=build_logging_config(_settings.LOG_LEVEL, _settings.LOG_FORMAT),
     )

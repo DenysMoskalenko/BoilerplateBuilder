@@ -9,20 +9,20 @@ readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version }}"
 
 dependencies = [
-    "fastapi>=0.136.1",
+    "fastapi>=0.136.3",
     "pydantic-settings>=2.14.1",
     "pydantic>=2.13.4",
-    "uvicorn[standard]>=0.47.0",
+    "uvicorn[standard]>=0.48.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     "alembic>=1.18.4",
-    "fastapi-pagination>=0.15.13",
+    "fastapi-pagination>=0.15.14",
     "psycopg[binary]>=3.3.4",
-    "sqlalchemy[asyncio]>=2.0.49",
+    "sqlalchemy[asyncio]>=2.0.50",
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-    "boto3>=1.43.13",
-    "boto3-stubs[bedrock-runtime]>=1.43.13",
-    "pydantic-ai-slim[openai,bedrock]>=1.101.0",
+    "boto3>=1.43.18",
+    "boto3-stubs[bedrock-runtime]>=1.43.18",
+    "pydantic-ai-slim[openai,bedrock]>=1.104.0",
     "pydantic-extra-types>=2.11.1",
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
@@ -41,14 +41,14 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.14",
-    "ty>=0.0.38",
-    "prek>=0.4.1",
-    "complexipy>=5.4.1",
+    "ruff>=0.15.15",
+    "ty>=0.0.40",
+    "prek>=0.4.3",
+    "complexipy>=5.5.0",
     "httpx>=0.28.1",
     "polyfactory>=3.3.0",
     "pytest>=9.0.3",
-    "pytest-asyncio>=1.3.0",
+    "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "pytest-html>=4.2.0",
     "freezegun>=1.5.5",
@@ -114,7 +114,12 @@ select = [
 pydocstyle.convention = 'google'
 
 [tool.ruff.lint.mccabe]
-max-complexity = 15
+max-complexity = 12
+
+[tool.complexipy]
+paths = ["app", "tests"]
+max-complexity-allowed = 12
+exclude = []
 
 [tool.ruff.lint.flake8-unused-arguments]
 ignore-variadic-names = true

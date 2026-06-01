@@ -6,8 +6,8 @@ from httpx import AsyncClient
 from pydantic import TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.examples.schemas import Example, ExampleCreate
-from app.services.example_service import ExampleService
+from app.modules.examples.schemas import Example, ExampleCreate
+from app.modules.examples.service import ExampleService
 from tests.factories import ExampleCreateFactory
 
 
