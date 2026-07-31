@@ -107,8 +107,9 @@ async def test_track_inflight_decrements_async_gauge_after_cancellation() -> Non
 
     task = asyncio.create_task(sample())
     await asyncio.sleep(0)
-    task.cancel()
+    assert get_metric_value(gauge, 'test_track_inflight_async_cancelled') == 1.0
 
+    task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
 

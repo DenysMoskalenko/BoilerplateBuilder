@@ -120,8 +120,10 @@ def test_real_exporter_turns_grpc_endpoint_into_channel_target(endpoint: str) ->
     assert settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT is not None
 
     exporter = OTLPSpanExporter(endpoint=settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT.encoded_string(), insecure=True)
+    channel_target = exporter._endpoint
+    exporter.shutdown()
 
-    assert exporter._endpoint == 'collector.internal:4317'
+    assert channel_target == 'collector.internal:4317'
 
 
 def test_setup_attaches_span_processor_to_provider(monkeypatch: MonkeyPatch) -> None:
