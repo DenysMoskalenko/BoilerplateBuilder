@@ -1,6 +1,8 @@
 import logging
 import sys
-from typing import ClassVar
+from typing import Any, ClassVar
+
+from pydantic_core import to_jsonable_python
 
 from app.core.logging.models import LOG_TIMESTAMP_FORMAT, StructuredLogRecord
 
@@ -12,9 +14,21 @@ def _get_otel_attribute(record: logging.LogRecord, key: str) -> str | None:
     return value
 
 
+def _collect_context(record: logging.LogRecord) -> dict[str, Any]:
+    context = getattr(record, 'extra', None)
+    if not isinstance(context, dict):
+        return {}
+    return {
+        key: to_jsonable_python(value, serialize_unknown=True)
+        for key, value in context.items()
+        if isinstance(key, str) and key not in StructuredLogRecord.model_fields
+    }
+
+
 class StructuredJsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         structured = StructuredLogRecord(
+            **_collect_context(record),
             timestamp=self.formatTime(record, LOG_TIMESTAMP_FORMAT),
             logger_name=record.name,
             level=record.levelname,

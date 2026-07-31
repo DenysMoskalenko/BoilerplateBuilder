@@ -114,7 +114,10 @@ class ExampleService:
             query = delete(ExampleModel).filter(ExampleModel.id == example_id).returning(ExampleModel.id)
             deleted_example_id = await self._session.scalar(query)
             if deleted_example_id is None:
-                _logger.info('Example with id=%s not found but was requested for deletion', example_id)
+                _logger.info(
+                    f'Example with id={example_id} not found but was requested for deletion',
+                    extra={'extra': {'example_id': example_id}},
+                )
 
     def _apply_filters(self, query: Select, filters: ExampleListFilters) -> Select:
         if filters.ids is not None:

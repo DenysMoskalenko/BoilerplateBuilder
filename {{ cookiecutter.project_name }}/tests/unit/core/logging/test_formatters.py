@@ -1,11 +1,13 @@
 import json
 import logging
 from types import TracebackType
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
+import pytest
 from pytest import MonkeyPatch
 
-from app.core.logging.formatters import ColorizedStdoutFormatter, StructuredJsonFormatter
+from app.core.logging.formatters import _collect_context, ColorizedStdoutFormatter, StructuredJsonFormatter
+from app.core.logging.models import StructuredLogRecord
 
 TraceContextValue: TypeAlias = str | int | None
 
@@ -16,6 +18,7 @@ def build_log_record(
     exc_info: tuple[type[BaseException], BaseException, TracebackType | None] | None = None,
     otel_trace_id: TraceContextValue = None,
     otel_span_id: TraceContextValue = None,
+    extra: Any = None,
 ) -> logging.LogRecord:
     record = logging.LogRecord(
         name='app.test', level=level, pathname=__file__, lineno=1, msg=message, args=(), exc_info=exc_info
@@ -24,6 +27,8 @@ def build_log_record(
         record.otelTraceID = otel_trace_id
     if otel_span_id is not None:
         record.otelSpanID = otel_span_id
+    if extra is not None:
+        record.extra = extra
     return record
 
 
@@ -90,6 +95,50 @@ def test_structured_json_formatter_includes_stack_trace() -> None:
     payload = json.loads(formatter.format(record))
 
     assert 'RuntimeError: boom' in payload['stack_trace']
+
+
+@pytest.mark.parametrize(
+    ('extra', 'expected'),
+    [
+        ({'request_id': 'req-9', 'attempt': 2}, {'request_id': 'req-9', 'attempt': 2}),
+        ({7: 'x', 'request_id': 'req-9'}, {'request_id': 'req-9'}),
+        (None, {}),
+        ('not-a-mapping', {}),
+        (['also-not-a-mapping'], {}),
+    ],
+)
+def test_collect_context_keeps_only_string_mapping_fields(extra: Any, expected: dict[str, Any]) -> None:
+    assert _collect_context(build_log_record(extra=extra)) == expected
+
+
+@pytest.mark.parametrize('reserved_key', sorted(StructuredLogRecord.model_fields))
+def test_collect_context_drops_reserved_keys(reserved_key: str) -> None:
+    context = _collect_context(build_log_record(extra={reserved_key: 'spoofed', 'request_id': 'req-9'}))
+
+    assert reserved_key not in context
+    assert context == {'request_id': 'req-9'}
+
+
+def test_structured_json_formatter_flattens_custom_fields_without_overriding_record_fields() -> None:
+    formatter = StructuredJsonFormatter()
+    record = build_log_record(
+        message='real message',
+        extra={'message': 'spoofed', 'trace_id': 'spoofed', 'request_id': 'req-9'},
+        otel_trace_id='abc123',
+        otel_span_id='def456',
+    )
+
+    payload = json.loads(formatter.format(record))
+
+    assert payload == {
+        'timestamp': payload['timestamp'],
+        'logger_name': 'app.test',
+        'level': 'INFO',
+        'message': 'real message',
+        'request_id': 'req-9',
+        'trace_id': 'abc123',
+        'span_id': 'def456',
+    }
 
 
 def test_colorized_stdout_formatter_colorizes_tty_levelname(monkeypatch: MonkeyPatch) -> None:

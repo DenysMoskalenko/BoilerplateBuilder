@@ -39,7 +39,7 @@ def setup(app: FastAPI, settings: Settings) -> None:
     endpoint = settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT
     if endpoint is None:
         raise ValueError('OBSERVABILITY_TRACING_OTLP_ENDPOINT is required when tracing is enabled')
-
+    endpoint_url = endpoint.encoded_string()
     LoggingInstrumentor().instrument(set_logging_format=False)
     FastAPIInstrumentor().instrument_app(app, exclude_spans=['send', 'receive'], excluded_urls=EXCLUDED_URLS_REGEX)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
@@ -48,13 +48,16 @@ def setup(app: FastAPI, settings: Settings) -> None:
 
     sampler = TraceIdRatioBased(settings.OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT / 100)
     provider = TracerProvider(resource=create_resource(settings=settings), sampler=sampler)
-    span_exporter = OTLPSpanExporter(endpoint=endpoint.encoded_string(), insecure=endpoint.scheme not in ('https', 'grpcs'))
+    span_exporter = OTLPSpanExporter(endpoint=endpoint_url, insecure=endpoint.scheme not in ('https', 'grpcs'))
     span_processor = BatchSpanProcessor(span_exporter=span_exporter)
     provider.add_span_processor(span_processor=span_processor)
     trace.set_tracer_provider(tracer_provider=provider)
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
     Agent.instrument_all(instrument=InstrumentationSettings(include_content=False, include_binary_content=False))
 {%- endif %}
-
-    logger.info(f'Tracing enabled and exporting to {endpoint}')
+    logger.info(
+        'Tracing enabled and exporting to %s',
+        endpoint_url,
+        extra={'extra': {'endpoint': endpoint_url}},
+    )
 {%- endif %}

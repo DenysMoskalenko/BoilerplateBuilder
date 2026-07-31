@@ -1,6 +1,6 @@
 from enum import auto, StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 LOG_TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -11,6 +11,8 @@ class LogFormatType(StrEnum):
 
 
 class StructuredLogRecord(BaseModel):
+    model_config = ConfigDict(extra='allow')
+
     timestamp: str
     logger_name: str
     level: str
