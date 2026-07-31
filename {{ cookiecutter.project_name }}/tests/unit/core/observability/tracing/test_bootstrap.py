@@ -2,6 +2,7 @@
 from typing import TypedDict, Unpack
 
 from fastapi import FastAPI
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.semconv.attributes import service_attributes
 import pytest
 from pytest import MonkeyPatch
@@ -110,6 +111,17 @@ def test_setup_uses_secure_exporter_for_grpcs_endpoint(monkeypatch: MonkeyPatch)
     spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT='grpcs://collector.internal:4317')
 
     assert spy.span_exporter == SpanExporterSpy(endpoint='grpcs://collector.internal:4317', insecure=False)
+
+
+@pytest.mark.parametrize('endpoint', ['grpc://collector.internal:4317', 'grpcs://collector.internal:4317'])
+def test_real_exporter_turns_grpc_endpoint_into_channel_target(endpoint: str) -> None:
+    """The unmocked OTLP exporter strips gRPC schemes down to a usable channel target."""
+    settings = build_settings(OBSERVABILITY_TRACING_OTLP_ENDPOINT=endpoint)
+    assert settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT is not None
+
+    exporter = OTLPSpanExporter(endpoint=settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT.encoded_string(), insecure=True)
+
+    assert exporter._endpoint == 'collector.internal:4317'
 
 
 def test_setup_attaches_span_processor_to_provider(monkeypatch: MonkeyPatch) -> None:
