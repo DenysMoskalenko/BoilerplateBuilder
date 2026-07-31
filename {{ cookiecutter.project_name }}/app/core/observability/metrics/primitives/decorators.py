@@ -119,7 +119,7 @@ def _hook_scope(before: Hook, after: Hook, on_exception: Hook) -> Generator[None
         before()
     try:
         yield
-    except Exception:
+    except BaseException:  # BaseException: cancellation and shutdown must release inflight gauges too
         if on_exception:
             on_exception()
         raise

@@ -1,4 +1,6 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
+import asyncio
+
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 import pytest
 from pytest import MonkeyPatch
@@ -93,6 +95,24 @@ async def test_track_inflight_decrements_async_gauge_after_failure() -> None:
         await sample()
 
     assert get_metric_value(gauge, 'test_track_inflight_async_error') == 0.0
+
+
+async def test_track_inflight_decrements_async_gauge_after_cancellation() -> None:
+    """Inflight tracking decrements asynchronous gauges when the call is cancelled."""
+    gauge = build_gauge('test_track_inflight_async_cancelled')
+
+    @metrics_decorators.track_inflight(gauge)
+    async def sample() -> None:
+        await asyncio.sleep(60)
+
+    task = asyncio.create_task(sample())
+    await asyncio.sleep(0)
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert get_metric_value(gauge, 'test_track_inflight_async_cancelled') == 0.0
 
 
 def test_increment_after_counts_sync_successes_by_default() -> None:
