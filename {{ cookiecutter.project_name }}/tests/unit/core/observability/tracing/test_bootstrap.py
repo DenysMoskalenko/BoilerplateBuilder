@@ -114,14 +114,16 @@ def test_setup_uses_secure_exporter_for_grpcs_endpoint(monkeypatch: MonkeyPatch)
 
 
 @pytest.mark.parametrize('endpoint', ['grpc://collector.internal:4317', 'grpcs://collector.internal:4317'])
-def test_real_exporter_turns_grpc_endpoint_into_channel_target(endpoint: str) -> None:
-    """The unmocked OTLP exporter strips gRPC schemes down to a usable channel target."""
-    settings = build_settings(OBSERVABILITY_TRACING_OTLP_ENDPOINT=endpoint)
-    assert settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT is not None
+def test_setup_hands_the_exporter_a_usable_grpc_channel_target(monkeypatch: MonkeyPatch, endpoint: str) -> None:
+    """The endpoint built for gRPC collectors resolves to a channel target in a real OTLP exporter."""
+    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT=endpoint)
+    assert spy.span_exporter is not None
 
-    exporter = OTLPSpanExporter(endpoint=settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT.encoded_string(), insecure=True)
-    channel_target = exporter._endpoint
-    exporter.shutdown()
+    exporter = OTLPSpanExporter(endpoint=spy.span_exporter.endpoint, insecure=spy.span_exporter.insecure)
+    try:
+        channel_target = exporter._endpoint
+    finally:
+        exporter.shutdown()
 
     assert channel_target == 'collector.internal:4317'
 
