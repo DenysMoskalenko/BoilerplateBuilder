@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: SecretStr | None = None
     AWS_SESSION_TOKEN: SecretStr | None = None
 
-    OPENAI_API_KEY: SecretStr
+    OPENAI_API_KEY: SecretStr = Field(min_length=1)
     OPENAI_TIMEOUT: int = 180
     OPENAI_BASE_URL: str = ''
     OPENAI_GPT_5_4_MODEL_NAME: str | Literal['gpt-5.4'] = 'gpt-5.4'
