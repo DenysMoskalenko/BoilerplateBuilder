@@ -108,6 +108,15 @@ class TestExamplesList:
         examples = response.json()['items']
         assert examples == [matching_example.model_dump(mode='json')]
 
+    async def test_list_filters_by_ids(self, session: AsyncSession, client: AsyncClient) -> None:
+        first_example = await create_test_example(session)
+        await create_test_example(session)
+
+        response = await client.get('/v1/examples', params={'ids': [first_example.id]})
+        assert response.status_code == 200
+
+        assert response.json()['items'] == [first_example.model_dump(mode='json')]
+
 
 class TestExamplesGet:
     async def test_success(self, session: AsyncSession, client: AsyncClient) -> None:
