@@ -122,7 +122,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U {{ cookiecutter.project_name.lower() }}_user -d {{ cookiecutter.project_name.lower() }}_db"]
       interval: 5s
