@@ -1,4 +1,6 @@
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+import logging
+
 from botocore.exceptions import ReadTimeoutError
 from httpx2 import AsyncClient
 from pydantic_ai import Agent
@@ -32,27 +34,30 @@ class TestCreateExampleAgentResponse:
         assert response.json() == {'answer': answer}
 
     @pytest.mark.parametrize(
-        ('exc', 'expected_status', 'expected_detail'),
+        ('exc', 'expected_status', 'expected_detail', 'expected_log_level'),
         [
-            (ModelHTTPError(status_code=429, model_name='test'), 429, RATE_LIMITED_DETAIL),
-            (ModelHTTPError(status_code=500, model_name='test'), 503, UNAVAILABLE_DETAIL),
-            (ModelAPIError(model_name='test', message='Connection error.'), 503, UNAVAILABLE_DETAIL),
-            (ReadTimeoutError(endpoint_url='https://bedrock.test'), 503, UNAVAILABLE_DETAIL),
+            (ModelHTTPError(status_code=429, model_name='test'), 429, RATE_LIMITED_DETAIL, logging.WARNING),
+            (ModelHTTPError(status_code=401, model_name='test'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
+            (ModelAPIError(model_name='test', message='Connection error.'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
+            (ReadTimeoutError(endpoint_url='https://bedrock.test'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
             (
                 UsageLimitExceeded('The next request would exceed the request_limit of 5'),
                 503,
-                'AI agent exceeded its usage limit. Please retry shortly.',
+                'AI agent exceeded its usage limit.',
+                logging.WARNING,
             ),
         ],
-        ids=['http_429', 'http_500', 'api_error', 'botocore_read_timeout', 'usage_limit_exceeded'],
+        ids=['http_429', 'http_401', 'api_error', 'botocore_read_timeout', 'usage_limit_exceeded'],
     )
     async def test_provider_error_mapping(
         self,
         client: AsyncClient,
         test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
+        caplog: pytest.LogCaptureFixture,
         exc: Exception,
         expected_status: int,
         expected_detail: str,
+        expected_log_level: int,
     ) -> None:
         with test_examples_agent.override(model=build_raising_model(exc)):
             response = await client.post(
@@ -62,4 +67,7 @@ class TestCreateExampleAgentResponse:
 
         assert response.status_code == expected_status
         assert response.json()['detail'] == expected_detail
+        assert [record.levelno for record in caplog.records if record.name == 'app.core.exception_handlers'] == [
+            expected_log_level
+        ]
 {%- endif %}

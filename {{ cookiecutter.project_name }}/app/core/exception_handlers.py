@@ -1,4 +1,7 @@
 {%- if cookiecutter.project_type != "fastapi_slim" -%}
+{% if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
+import logging
+{% endif -%}
 from typing import NoReturn, cast
 
 from fastapi import FastAPI, HTTPException, Request
@@ -12,6 +15,8 @@ from app.core.exceptions import AlreadyExistError, NotFoundError
 
 from botocore.exceptions import BotoCoreError
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
+
+_logger = logging.getLogger(__name__)
 {%- endif %}
 
 
@@ -42,6 +47,7 @@ def conflict_exception_handler(request: Request, exc: AlreadyExistError) -> NoRe
 
 def model_http_error_exception_handler(request: Request, exc: ModelHTTPError) -> NoReturn:
     if exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+        _logger.warning('AI provider rate limited the request: %s', exc)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail='Too many requests to the AI provider. Please try again in a moment.',
@@ -50,6 +56,7 @@ def model_http_error_exception_handler(request: Request, exc: ModelHTTPError) ->
 
 
 def ai_provider_unavailable_exception_handler(request: Request, exc: ModelAPIError | BotoCoreError) -> NoReturn:  # noqa: ARG001
+    _logger.error('AI provider request failed', exc_info=exc)
     raise HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail='AI provider temporarily unavailable. Please retry shortly.',
@@ -57,9 +64,10 @@ def ai_provider_unavailable_exception_handler(request: Request, exc: ModelAPIErr
 
 
 def usage_limit_exceeded_exception_handler(request: Request, exc: UsageLimitExceeded) -> NoReturn:  # noqa: ARG001
+    _logger.warning('AI agent exceeded its usage limit: %s', exc)
     raise HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail='AI agent exceeded its usage limit. Please retry shortly.',
+        detail='AI agent exceeded its usage limit.',
     ) from exc
 {%- endif %}
 {%- endif %}
