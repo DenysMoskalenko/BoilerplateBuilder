@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends
 {%- endif %}
-from pydantic_ai import Agent
+from pydantic_ai import Agent, UsageLimits
 
 from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentRequest, ExampleAgentResponse
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
@@ -39,6 +39,6 @@ class ExampleAgentService:
 {%- else %}
         deps = ExampleAgentDeps()
 {%- endif %}
-        result = await agent.run(payload.question, deps=deps)
+        result = await agent.run(payload.question, deps=deps, usage_limits=UsageLimits(request_limit=5))
         return result.output
 {%- endif %}
