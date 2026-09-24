@@ -23,7 +23,7 @@ See `AGENTS.md` for contributor-facing guidelines (commit/PR conventions, etc.).
 | `use_otel_observability` | `no` / `yes` | adds `app/core/observability` + OTEL/Prometheus deps |
 | `generate_local_otel_stack` | `no` / `yes` | **requires `use_otel_observability=yes`** (else the post-gen hook exits 1 and no project is created) |
 | `use_github_actions`, `initialize_git` | `yes` / `no` | |
-| `python_version` | `3.13` / `3.12` / `3.11` | |
+| `python_version` | `3.14` / `3.13` / `3.12` / `3.11` | |
 | `extract_to_current_dir` | `Create New` / `Extract Here` | "Extract Here" merges output into the parent dir, for adding the template to an existing repo |
 
 Hooks derive two boolean axes from `project_type`: `IS_DB` (`fastapi_db`, `fastapi_db_agent`) and `IS_AGENT` (`fastapi_agent`, `fastapi_db_agent`).
@@ -45,14 +45,14 @@ After cookiecutter renders, `hooks/post_gen_project.py` runs this pipeline (orde
 cookiecutter . --no-input project_type=fastapi_db initialize_git=no
 
 # Canonical validation: generate each type, then uv sync + make lint + make typecheck + make test inside each
-python -m scripts.template_smoke_test                                  # all types, python 3.12, no otel
+python -m scripts.template_smoke_test                                  # all types, python 3.14, no otel
 python -m scripts.template_smoke_test --project-types fastapi_slim --keep-builds
 python -m scripts.template_smoke_test --use-otel yes --local-otel-stack yes
 ```
 
 `scripts/template_smoke_test.py` is the real test harness (generated output goes under `.template-builds/`). It needs `cookiecutter`, `uv`, `make`, and **Docker** (db types use testcontainers). Mirror it for any non-trivial change.
 
-A template change is correct only when **every affected `project_type` still generates, lints, type-checks, and tests green** — and for observability work, across all four `use_otel_observability`/`generate_local_otel_stack` pairs: `yes/yes`, `yes/no`, `no/no`, and `no/yes` (which must fail early and create nothing). This is exactly what `.github/workflows/test-templates.yml` enforces: a `4 types × 3 python × 3 observability profiles` lint/typecheck/test matrix, a generation-only file-presence matrix, and a `fastapi_db` smoke job.
+A template change is correct only when **every affected `project_type` still generates, lints, type-checks, and tests green** — and for observability work, across all four `use_otel_observability`/`generate_local_otel_stack` pairs: `yes/yes`, `yes/no`, `no/no`, and `no/yes` (which must fail early and create nothing). This is exactly what `.github/workflows/test-templates.yml` enforces: a `4 types × 4 python × 3 observability profiles` lint/typecheck/test matrix, a generation-only file-presence matrix, and a `fastapi_db` smoke job.
 
 After adding files to the template, `git add` them — untracked files are easy to lose in review and the diff.
 

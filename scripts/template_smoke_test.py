@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 PROJECT_TYPES = ('fastapi_db_agent', 'fastapi_db', 'fastapi_agent', 'fastapi_slim')
-PYTHON_VERSIONS = ('3.11', '3.12', '3.13')
+PYTHON_VERSIONS = ('3.11', '3.12', '3.13', '3.14')
 
 
 def parse_args() -> argparse.Namespace:
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--python-version',
         choices=PYTHON_VERSIONS,
-        default='3.12',
+        default='3.14',
         help='Python version to use for generated projects.',
     )
     parser.add_argument(
