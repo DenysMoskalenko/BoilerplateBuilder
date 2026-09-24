@@ -44,9 +44,9 @@ class ExampleListFilters(BaseModel):
     @field_validator('created_from', 'created_to')
     @classmethod
     def normalize_datetime_filter(cls, value: datetime | None) -> datetime | None:
-        if value is None or value.tzinfo is None:
+        if value is None or value.tzinfo is not None:
             return value
-        return value.astimezone(UTC).replace(tzinfo=None)
+        return value.replace(tzinfo=UTC)
 
 
 class ExampleListSorting(BaseListSorting):

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi_pagination import Page
 from httpx2 import AsyncClient
 from pydantic import TypeAdapter
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.examples.schemas import Example, ExampleCreate
@@ -116,6 +117,19 @@ class TestExamplesList:
         assert response.status_code == 200
 
         assert response.json()['items'] == [first_example.model_dump(mode='json')]
+
+    @pytest.mark.parametrize('naive', [False, True], ids=['aware', 'naive_as_utc'])
+    async def test_list_filters_by_created_at(self, session: AsyncSession, client: AsyncClient, naive: bool) -> None:
+        example = await create_test_example(session)
+        hour_ago = datetime.now(UTC) - timedelta(hours=1)
+        assert example.created_at > hour_ago
+        boundary = (hour_ago.replace(tzinfo=None) if naive else hour_ago).isoformat()
+
+        created_after = await client.get('/v1/examples', params={'created_from': boundary})
+        created_before = await client.get('/v1/examples', params={'created_to': boundary})
+
+        assert created_after.json()['items'] == [example.model_dump(mode='json')]
+        assert created_before.json()['items'] == []
 
 
 class TestExamplesGet:
