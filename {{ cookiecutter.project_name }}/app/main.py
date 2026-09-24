@@ -11,6 +11,7 @@ from app.core.exception_handlers import include_exception_handlers
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from app.core.lifespan import lifespan
+from app.infrastructure.db.models import load_all_models
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
 from app.core import observability
@@ -21,6 +22,9 @@ from app.router import create_router
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    load_all_models()
+{%- endif %}
 
     _app = FastAPI(
         title=settings.PROJECT_NAME,
