@@ -42,7 +42,7 @@ def build_examples_agent(model: Model) -> Agent[ExampleAgentDeps, ExampleAgentRe
         model=model,
         output_type=ExampleAgentResponse,
         deps_type=ExampleAgentDeps,
-        system_prompt=EXAMPLE_AGENT_SYSTEM_PROMPT,
+        instructions=EXAMPLE_AGENT_SYSTEM_PROMPT,
         retries=0,
         model_settings=_get_examples_agent_model_settings(model),
     )

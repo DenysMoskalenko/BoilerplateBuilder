@@ -61,13 +61,13 @@ After adding files to the template, `git add` them — untracked files are easy 
 Commands (from the generated `Makefile`, run **inside** a generated project):
 
 - `make run` — `python -m app.main`; uvicorn app factory on `0.0.0.0:8000` (`/docs`, `/redoc`)
-- `make lint` (ruff format + `check --fix`) · `make lint-no-format` · `make typecheck` (`ty check`) · `make test` (pytest) · `make test-coverage` (`--cov-fail-under=90`) · `make check` (lint + typecheck + coverage)
+- `make lint` (ruff `check --fix` + format) · `make lint-no-format` · `make typecheck` (`ty check`) · `make test` (pytest) · `make test-coverage` (`--cov-fail-under=90`) · `make check` (lint + typecheck + coverage)
 - db types: `make up-dependencies` (docker-compose Postgres) · `make migrate` · `make migration MSG="…"` · `make upgrade` · `make downgrade`
 - single test: `uv run pytest tests/api/test_examples.py::test_name -v`
 
 Package-by-feature FastAPI app under `app/`: business logic lives in vertical slices under `domains/`; cross-cutting technical code stays in `core/` and `infrastructure/`.
 
-- **Entry / wiring** — `main.py::create_app()` is the app factory. `router.py::create_router()` aggregates the domain routers: `health_checks` (always, at root) plus `examples` (db) and `examples_agent` (agent) under `/v1`. Exception handlers are registered **last**, after routers and middleware.
+- **Entry / wiring** — `main.py::create_app()` is the app factory. `router.py::create_router()` aggregates the domain routers: `health_checks` (always, at root) plus `examples` (db) and `examples_agent` (agent) under `/v1`. Exception handlers are resolved by exception class MRO, so their order relative to routers and middleware does not matter; they must be registered before the first request, when Starlette builds the middleware stack and copies them.
 - **Config** — `core/config.py`: a frozen pydantic-settings `Settings`, exposed via `@lru_cache get_settings()`, loaded from `.env`.
 - **Dependency Injection via FastAPI `Depends` throughout** — services receive collaborators in `__init__` (`Annotated[AsyncSession, Depends(get_session)]`); routes inject services with `Annotated[ExampleService, Depends()]`. Convention: public methods at the top of a class, private `_helpers` at the bottom.
 - **`domains/<feature>/`** — one vertical slice per feature (`routes.py` + `schemas.py` + `service.py`), each domain flat until a concern genuinely needs 2+ files (then it grows a subpackage with a facade `__init__.py`; the `examples_agent` domain's `schemas/` split into `schemas_api.py` + `schemas_agent.py` is the reference). `domains/README.md` documents the conventions. Shipped domains: `health_checks` (all types), `examples` (db), `examples_agent` (agent).

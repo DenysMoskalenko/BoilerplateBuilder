@@ -1,13 +1,17 @@
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from datetime import date, datetime, timedelta, UTC
 
+from fastapi import FastAPI
 from fastapi_pagination import Page
 from httpx2 import AsyncClient
 from pydantic import TypeAdapter
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.examples.schemas import Example, ExampleCreate
 from app.domains.examples.service import ExampleService
+from app.infrastructure.db.database import get_session
+from tests.dependencies import SessionFixtureDoesNotSetExplicitly
 from tests.factories import ExampleCreateFactory
 
 
@@ -105,6 +109,28 @@ class TestExamplesList:
         examples = response.json()['items']
         assert examples == [matching_example.model_dump(mode='json')]
 
+    async def test_list_filters_by_ids(self, session: AsyncSession, client: AsyncClient) -> None:
+        first_example = await create_test_example(session)
+        await create_test_example(session)
+
+        response = await client.get('/v1/examples', params={'ids': [first_example.id]})
+        assert response.status_code == 200
+
+        assert response.json()['items'] == [first_example.model_dump(mode='json')]
+
+    @pytest.mark.parametrize('naive', [False, True], ids=['aware', 'naive_as_utc'])
+    async def test_list_filters_by_created_at(self, session: AsyncSession, client: AsyncClient, naive: bool) -> None:
+        example = await create_test_example(session)
+        hour_ago = datetime.now(UTC) - timedelta(hours=1)
+        assert example.created_at > hour_ago
+        boundary = (hour_ago.replace(tzinfo=None) if naive else hour_ago).isoformat()
+
+        created_after = await client.get('/v1/examples', params={'created_from': boundary})
+        created_before = await client.get('/v1/examples', params={'created_to': boundary})
+
+        assert created_after.json()['items'] == [example.model_dump(mode='json')]
+        assert created_before.json()['items'] == []
+
 
 class TestExamplesGet:
     async def test_success(self, session: AsyncSession, client: AsyncClient) -> None:
@@ -185,4 +211,15 @@ class TestExamplesDelete:
         response = await client.delete(f'/v1/examples/{unreal_id}')
 
         assert response.status_code == 204
+
+
+class TestSessionFixtureTeardown:
+    async def test_request_with_session_fixture(self, session: AsyncSession, client: AsyncClient) -> None:
+        response = await client.get('/v1/examples')
+
+        assert response.status_code == 200
+
+    async def test_session_override_restored_after_session_fixture(self, app: FastAPI) -> None:
+        # Runs after the test above (pytest keeps definition order): its closed session must not leak here
+        assert app.dependency_overrides[get_session]() is SessionFixtureDoesNotSetExplicitly
 {%- endif %}

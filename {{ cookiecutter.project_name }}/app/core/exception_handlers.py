@@ -1,4 +1,7 @@
 {%- if cookiecutter.project_type != "fastapi_slim" -%}
+{% if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
+import logging
+{% endif -%}
 from typing import NoReturn, cast
 
 from fastapi import FastAPI, HTTPException, Request
@@ -10,8 +13,10 @@ from app.core.exceptions import AlreadyExistError, NotFoundError
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
-from botocore.exceptions import ClientError
-from openai import APIConnectionError, APITimeoutError, RateLimitError
+from botocore.exceptions import BotoCoreError
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
+
+_logger = logging.getLogger(__name__)
 {%- endif %}
 
 
@@ -21,10 +26,11 @@ def include_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(AlreadyExistError, cast(ExceptionHandler, conflict_exception_handler))
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-    app.add_exception_handler(ClientError, cast(ExceptionHandler, aws_client_error_exception_handler))
-    app.add_exception_handler(RateLimitError, cast(ExceptionHandler, openai_rate_limit_exception_handler))
-    app.add_exception_handler(APIConnectionError, cast(ExceptionHandler, openai_unavailable_exception_handler))
-    app.add_exception_handler(APITimeoutError, cast(ExceptionHandler, openai_unavailable_exception_handler))
+    app.add_exception_handler(ModelHTTPError, cast(ExceptionHandler, model_http_error_exception_handler))
+    app.add_exception_handler(ModelAPIError, cast(ExceptionHandler, ai_provider_unavailable_exception_handler))
+    # Bedrock wraps only ClientError; BotoCoreError (timeouts, connection errors) reaches the app unwrapped
+    app.add_exception_handler(BotoCoreError, cast(ExceptionHandler, ai_provider_unavailable_exception_handler))
+    app.add_exception_handler(UsageLimitExceeded, cast(ExceptionHandler, usage_limit_exceeded_exception_handler))
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
@@ -39,32 +45,29 @@ def conflict_exception_handler(request: Request, exc: AlreadyExistError) -> NoRe
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
 
-def aws_client_error_exception_handler(request: Request, exc: ClientError) -> NoReturn:  # noqa: ARG001
-    code = exc.response.get('Error', {}).get('Code')
-    if code == 'ThrottlingException':
+def model_http_error_exception_handler(request: Request, exc: ModelHTTPError) -> NoReturn:
+    if exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+        _logger.warning('AI provider rate limited the request: %s', exc)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail='Too many requests to the AI provider. Please try again in a moment.',
         ) from exc
-    if code in {'ServiceUnavailableException', 'TooManyRequestsException'}:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail='AI provider temporarily unavailable. Please retry shortly.',
-        ) from exc
-    raise exc
+    ai_provider_unavailable_exception_handler(request, exc)
 
 
-def openai_rate_limit_exception_handler(request: Request, exc: RateLimitError) -> NoReturn:  # noqa: ARG001
-    raise HTTPException(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail='Too many requests to the AI provider. Please try again in a moment.',
-    ) from exc
-
-
-def openai_unavailable_exception_handler(request: Request, exc: APIConnectionError | APITimeoutError) -> NoReturn:  # noqa: ARG001
+def ai_provider_unavailable_exception_handler(request: Request, exc: ModelAPIError | BotoCoreError) -> NoReturn:  # noqa: ARG001
+    _logger.error('AI provider request failed', exc_info=exc)
     raise HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail='AI provider temporarily unavailable. Please retry shortly.',
+    ) from exc
+
+
+def usage_limit_exceeded_exception_handler(request: Request, exc: UsageLimitExceeded) -> NoReturn:  # noqa: ARG001
+    _logger.warning('AI agent exceeded its usage limit: %s', exc)
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail='AI agent exceeded its usage limit.',
     ) from exc
 {%- endif %}
 {%- endif %}

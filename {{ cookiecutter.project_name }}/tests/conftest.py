@@ -37,7 +37,7 @@ from tests.mocks.agent_mocks import generate_test_agent
 {%- endif %}
 from tests.dependencies import override_app_test_dependencies
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-from tests.dependencies import override_dependency
+from tests.dependencies import temporary_override
 {%- endif %}
 
 TEST_HOST = 'http://test'
@@ -96,15 +96,14 @@ async def session(app: FastAPI, _engine: AsyncEngine) -> AsyncIterable[AsyncSess
     connection = await _engine.connect()
     trans = await connection.begin()
 
-    session_factory = async_sessionmaker(connection, expire_on_commit=False)
+    session_factory = async_sessionmaker(connection, expire_on_commit=False, join_transaction_mode='create_savepoint')
     session = session_factory()
 
     from app.infrastructure.db.database import get_session
 
-    override_dependency(app, get_session, lambda: session)
-
     try:
-        yield session
+        with temporary_override(app, get_session, lambda: session):
+            yield session
     finally:
         await trans.rollback()
         await session.close()

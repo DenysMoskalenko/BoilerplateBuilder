@@ -1,16 +1,18 @@
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-from typing import Any, cast
+import logging
 
-from botocore.exceptions import ClientError
-from httpx import Request, Response  # openai SDK exceptions expect its own httpx (v1) types
+from botocore.exceptions import ReadTimeoutError
 from httpx2 import AsyncClient
-from openai import APIConnectionError, RateLimitError
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
 import pytest
 
 from app.core.enums import AIModelName
 from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentResponse
 from tests.mocks.agent_mocks import build_mock_model, build_raising_model
+
+RATE_LIMITED_DETAIL = 'Too many requests to the AI provider. Please try again in a moment.'
+UNAVAILABLE_DETAIL = 'AI provider temporarily unavailable. Please retry shortly.'
 
 
 class TestCreateExampleAgentResponse:
@@ -31,62 +33,41 @@ class TestCreateExampleAgentResponse:
         assert response.status_code == 200
         assert response.json() == {'answer': answer}
 
-    async def test_bedrock_throttling_maps_to_429(
-        self,
-        client: AsyncClient,
-        test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
-    ) -> None:
-        exc = ClientError(
-            error_response=cast(
-                Any,
-                {
-                    'Error': {'Code': 'ThrottlingException', 'Message': 'Rate exceeded'},
-                    'ResponseMetadata': {'HTTPStatusCode': 400},
-                },
+    @pytest.mark.parametrize(
+        ('exc', 'expected_status', 'expected_detail', 'expected_log_level'),
+        [
+            (ModelHTTPError(status_code=429, model_name='test'), 429, RATE_LIMITED_DETAIL, logging.WARNING),
+            (ModelHTTPError(status_code=401, model_name='test'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
+            (ModelAPIError(model_name='test', message='Connection error.'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
+            (ReadTimeoutError(endpoint_url='https://bedrock.test'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
+            (
+                UsageLimitExceeded('The next request would exceed the request_limit of 5'),
+                503,
+                'AI agent exceeded its usage limit.',
+                logging.WARNING,
             ),
-            operation_name='Converse',
-        )
-        with test_examples_agent.override(model=build_raising_model(exc)):
-            response = await client.post(
-                '/v1/agents/examples/conversations',
-                json={'model': 'sonnet-4.6', 'question': 'How many examples do we have?'},
-            )
-
-        assert response.status_code == 429
-        assert response.json()['detail'] == 'Too many requests to the AI provider. Please try again in a moment.'
-
-    async def test_openai_rate_limit_maps_to_429(
+        ],
+        ids=['http_429', 'http_401', 'api_error', 'botocore_read_timeout', 'usage_limit_exceeded'],
+    )
+    async def test_provider_error_mapping(
         self,
         client: AsyncClient,
         test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
+        caplog: pytest.LogCaptureFixture,
+        exc: Exception,
+        expected_status: int,
+        expected_detail: str,
+        expected_log_level: int,
     ) -> None:
-        request = Request('POST', 'https://api.openai.com/v1/responses')
-        response = Response(429, request=request)
-        exc = RateLimitError('rate limited', response=response, body={'error': {'message': 'rate limited'}})
         with test_examples_agent.override(model=build_raising_model(exc)):
             response = await client.post(
                 '/v1/agents/examples/conversations',
                 json={'model': 'gpt-5.4', 'question': 'How many examples do we have?'},
             )
 
-        assert response.status_code == 429
-        assert response.json()['detail'] == 'Too many requests to the AI provider. Please try again in a moment.'
-
-    async def test_openai_connection_error_maps_to_503(
-        self,
-        client: AsyncClient,
-        test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
-    ) -> None:
-        exc = APIConnectionError(
-            message='Connection error.',
-            request=Request('POST', 'https://api.openai.com/v1/responses'),
-        )
-        with test_examples_agent.override(model=build_raising_model(exc)):
-            response = await client.post(
-                '/v1/agents/examples/conversations',
-                json={'model': 'gpt-5.4', 'question': 'How many examples do we have?'},
-            )
-
-        assert response.status_code == 503
-        assert response.json()['detail'] == 'AI provider temporarily unavailable. Please retry shortly.'
+        assert response.status_code == expected_status
+        assert response.json()['detail'] == expected_detail
+        assert [record.levelno for record in caplog.records if record.name == 'app.core.exception_handlers'] == [
+            expected_log_level
+        ]
 {%- endif %}

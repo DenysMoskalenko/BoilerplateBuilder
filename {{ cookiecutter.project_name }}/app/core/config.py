@@ -1,4 +1,5 @@
 from functools import lru_cache
+from importlib.metadata import version
 {% set is_agent = cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
 {% if is_agent and cookiecutter.use_otel_observability == "yes" -%}
 from typing import Annotated, Literal, Self
@@ -17,8 +18,9 @@ from pydantic import SecretStr
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
 
-from pydantic import AnyUrl, Field, UrlConstraints, model_validator
+from pydantic import AnyUrl, UrlConstraints, model_validator
 {%- endif %}
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.logging import LogFormatType, LogLevel
@@ -30,7 +32,7 @@ OtlpEndpoint = Annotated[AnyUrl, UrlConstraints(allowed_schemes=['http', 'https'
 {% endif -%}
 class Settings(BaseSettings):
     PROJECT_NAME: str = '{{ cookiecutter.project_name }}'
-    PROJECT_VERSION: str = '0.1.0'
+    PROJECT_VERSION: str = Field(default_factory=lambda: version('{{ cookiecutter.project_name }}'))
     LOG_LEVEL: LogLevel = 'INFO'
     LOG_FORMAT: LogFormatType = LogFormatType.STDOUT
     ROOT_PATH: str = ''
