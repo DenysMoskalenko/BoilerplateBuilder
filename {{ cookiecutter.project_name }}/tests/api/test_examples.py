@@ -1,6 +1,7 @@
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from datetime import date, datetime, timedelta, UTC
 
+from fastapi import FastAPI
 from fastapi_pagination import Page
 from httpx2 import AsyncClient
 from pydantic import TypeAdapter
@@ -8,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.examples.schemas import Example, ExampleCreate
 from app.domains.examples.service import ExampleService
+from app.infrastructure.db.database import get_session
+from tests.dependencies import SessionFixtureDoesNotSetExplicitly
 from tests.factories import ExampleCreateFactory
 
 
@@ -185,4 +188,15 @@ class TestExamplesDelete:
         response = await client.delete(f'/v1/examples/{unreal_id}')
 
         assert response.status_code == 204
+
+
+class TestSessionFixtureTeardown:
+    async def test_request_with_session_fixture(self, session: AsyncSession, client: AsyncClient) -> None:
+        response = await client.get('/v1/examples')
+
+        assert response.status_code == 200
+
+    async def test_session_override_restored_after_session_fixture(self, app: FastAPI) -> None:
+        # Runs after the test above (pytest keeps definition order): its closed session must not leak here
+        assert app.dependency_overrides[get_session]() is SessionFixtureDoesNotSetExplicitly
 {%- endif %}
