@@ -61,7 +61,7 @@ After adding files to the template, `git add` them — untracked files are easy 
 Commands (from the generated `Makefile`, run **inside** a generated project):
 
 - `make run` — `python -m app.main`; uvicorn app factory on `0.0.0.0:8000` (`/docs`, `/redoc`)
-- `make lint` (ruff format + `check --fix`) · `make lint-no-format` · `make typecheck` (`ty check`) · `make test` (pytest) · `make test-coverage` (`--cov-fail-under=90`) · `make check` (lint + typecheck + coverage)
+- `make lint` (ruff `check --fix` + format) · `make lint-no-format` · `make typecheck` (`ty check`) · `make test` (pytest) · `make test-coverage` (`--cov-fail-under=90`) · `make check` (lint + typecheck + coverage)
 - db types: `make up-dependencies` (docker-compose Postgres) · `make migrate` · `make migration MSG="…"` · `make upgrade` · `make downgrade`
 - single test: `uv run pytest tests/api/test_examples.py::test_name -v`
 

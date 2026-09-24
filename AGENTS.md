@@ -11,14 +11,14 @@
 - After generation (inside the new project):
   - `uv sync` – install dependencies
   - `make run` – start the API
-  - `make lint` – format + lint via Ruff
+  - `make lint` – lint + format via Ruff
   - `make typecheck` – static type check via ty
   - `make test` / `make test-coverage` – run tests
 - DB projects: `make up-dependencies`, `make migrate`, `make migration MSG="add feature"`.
 
 ## Coding Style & Naming Conventions
 - Python 3.11+ with modern typing (`list[str]`, `str | None`). Prefer Pydantic models for data.
-- Lint/format with Ruff (`uv run ruff format` and `uv run ruff check --fix`).
+- Lint/format with Ruff (`uv run ruff check --fix`, then `uv run ruff format`).
 - Naming: modules/files `snake_case`; classes `PascalCase`; functions/vars `snake_case`; tests start with `test_`.
 - Preserve Jinja placeholders exactly (e.g., `{{ cookiecutter.project_name }}`) when editing template files and paths.
 
