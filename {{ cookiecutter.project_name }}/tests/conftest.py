@@ -24,7 +24,7 @@ from pydantic_ai import Agent, models as pydantic_ai_models
 import pytest
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine, AsyncSession, create_async_engine
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.postgres import PostgresContainer
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
