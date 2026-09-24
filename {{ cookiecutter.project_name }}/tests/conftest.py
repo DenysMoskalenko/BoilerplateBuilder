@@ -96,7 +96,7 @@ async def session(app: FastAPI, _engine: AsyncEngine) -> AsyncIterable[AsyncSess
     connection = await _engine.connect()
     trans = await connection.begin()
 
-    session_factory = async_sessionmaker(connection, expire_on_commit=False)
+    session_factory = async_sessionmaker(connection, expire_on_commit=False, join_transaction_mode='create_savepoint')
     session = session_factory()
 
     from app.infrastructure.db.database import get_session

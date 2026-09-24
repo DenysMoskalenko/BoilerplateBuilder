@@ -73,51 +73,46 @@ class ExampleService:
 {%- endif %}
 
     async def create_example(self, creation: ExampleCreate) -> Example:
-        async with self._session.begin_nested():
-            await self._validate_example_unique(creation)
+        await self._validate_example_unique(creation)
 
-            query = (
-                insert(ExampleModel)
-                .values(
-                    name=creation.name,
-                    description=creation.description,
-                    birthday=creation.birthday,
-                )
-                .returning(ExampleModel)
+        query = (
+            insert(ExampleModel)
+            .values(
+                name=creation.name,
+                description=creation.description,
+                birthday=creation.birthday,
             )
-            example = await self._session.scalar(query)
-
+            .returning(ExampleModel)
+        )
+        example = await self._session.scalar(query)
         return Example.model_validate(example)
 
     async def update_example(self, example_id: int, updates: ExampleUpdate) -> Example:
-        async with self._session.begin_nested():
-            await self._validate_example_unique(updates, exclude_example_id=example_id)
+        await self._validate_example_unique(updates, exclude_example_id=example_id)
 
-            query = (
-                update(ExampleModel)
-                .filter(ExampleModel.id == example_id)
-                .values(
-                    name=updates.name,
-                    description=updates.description,
-                    birthday=updates.birthday,
-                )
-                .returning(ExampleModel)
+        query = (
+            update(ExampleModel)
+            .filter(ExampleModel.id == example_id)
+            .values(
+                name=updates.name,
+                description=updates.description,
+                birthday=updates.birthday,
             )
-            example = await self._session.scalar(query)
-
+            .returning(ExampleModel)
+        )
+        example = await self._session.scalar(query)
         if example is None:
             raise NotFoundError(f'Example(id={example_id}) not found')
         return Example.model_validate(example)
 
     async def delete_example_by_id(self, example_id: int) -> None:
-        async with self._session.begin_nested():
-            query = delete(ExampleModel).filter(ExampleModel.id == example_id).returning(ExampleModel.id)
-            deleted_example_id = await self._session.scalar(query)
-            if deleted_example_id is None:
-                _logger.info(
-                    f'Example with id={example_id} not found but was requested for deletion',
-                    extra={'extra': {'example_id': example_id}},
-                )
+        query = delete(ExampleModel).filter(ExampleModel.id == example_id).returning(ExampleModel.id)
+        deleted_example_id = await self._session.scalar(query)
+        if deleted_example_id is None:
+            _logger.info(
+                f'Example with id={example_id} not found but was requested for deletion',
+                extra={'extra': {'example_id': example_id}},
+            )
 
     def _apply_filters(self, query: Select, filters: ExampleListFilters) -> Select:
         if filters.ids is not None:
