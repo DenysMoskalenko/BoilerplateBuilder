@@ -22,8 +22,12 @@ jobs:
         run: echo "Cache was restored"
       - name: Run linter
         run: uv run ruff check
+      - name: Check formatting
+        run: uv run ruff format --check
       - name: Run typecheck
         run: uv run ty check
+      - name: Run complexity check
+        run: uv run complexipy .
 
   tests:
     needs: linter
