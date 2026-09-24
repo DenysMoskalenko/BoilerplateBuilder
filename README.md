@@ -24,7 +24,7 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 | **`fastapi_agent`** | FastAPI + AI agent. No database, just an LLM-powered endpoint. |
 | **`fastapi_slim`** | Minimal FastAPI. Health checks, Docker, tests — nothing else. |
 
-All types share: Python 3.11–3.13, uv, Ruff + ty, pytest, Docker, Makefile, pre-commit (via prek), and optional GitHub Actions.
+All types share: Python 3.11–3.14, uv, Ruff + ty, pytest, Docker, Makefile, pre-commit (via prek), and optional GitHub Actions.
 
 ### What each type adds
 
@@ -85,7 +85,7 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder \
   --no-input \
   project_name="MyAPI" \
   project_type="fastapi_db" \
-  python_version="3.13"
+  python_version="3.14"
 ```
 
 All options with defaults:
@@ -95,7 +95,7 @@ All options with defaults:
 | `extract_to_current_dir` | `Create New` | `Create New`, `Extract Here` |
 | `project_name` | `MyProject` | any string |
 | `project_type` | `fastapi_db_agent` | `fastapi_db_agent`, `fastapi_db`, `fastapi_agent`, `fastapi_slim` |
-| `python_version` | `3.13` | `3.13`, `3.12`, `3.11` |
+| `python_version` | `3.14` | `3.14`, `3.13`, `3.12`, `3.11` |
 | `use_github_actions` | `yes` | `yes`, `no` |
 | `initialize_git` | `yes` | `yes`, `no` |
 | `use_otel_observability` | `no` | `yes`, `no` |
@@ -150,7 +150,7 @@ make migration MSG="…"  # Create new migration (db types)
 - **Database**: [SQLAlchemy 2.0](https://www.sqlalchemy.org/) + [Alembic](https://alembic.sqlalchemy.org/)
 - **AI agents**: [pydantic-ai](https://github.com/pydantic/pydantic-ai) with OpenAI and AWS Bedrock
 - **Observability**: [OpenTelemetry](https://opentelemetry.io/), Prometheus, Grafana, Tempo, Loki, Grafana Alloy
-- **CI/CD**: GitHub Actions with matrix testing across Python 3.11–3.13
+- **CI/CD**: GitHub Actions with matrix testing across Python 3.11–3.14
 
 ## Contributing
 

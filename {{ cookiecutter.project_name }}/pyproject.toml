@@ -9,43 +9,43 @@ readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version }}"
 
 dependencies = [
-    "fastapi==0.139.0",
-    "pydantic-settings==2.14.2",
-    "pydantic==2.13.4",
-    "uvicorn[standard]==0.50.2",
+    "fastapi==0.141.1",
+    "pydantic-settings==2.15.0",
+    "pydantic==2.13.5",
+    "uvicorn[standard]==0.53.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    "alembic==1.18.5",
-    "fastapi-pagination==0.15.15",
-    "psycopg[binary]==3.3.4",
-    "sqlalchemy[asyncio]==2.0.51",
+    "alembic==1.20.0",
+    "fastapi-pagination==0.16.0",
+    "psycopg[binary]==3.3.6",
+    "sqlalchemy[asyncio]==2.0.54",
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-    "boto3==1.43.41",
-    "boto3-stubs[bedrock-runtime]==1.43.41",
-    "pydantic-ai-slim[openai,bedrock]==2.5.1",
+    "boto3==1.43.101",
+    "boto3-stubs[bedrock-runtime]==1.43.101",
+    "pydantic-ai-slim[openai,bedrock]==2.49.0",
     "pydantic-extra-types==2.11.1",
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
-    "opentelemetry-sdk==1.43.0",
-    "opentelemetry-exporter-otlp==1.43.0",
-    "opentelemetry-instrumentation-logging==0.64b0",
-    "opentelemetry-semantic-conventions==0.64b0",
-    "prometheus-client==0.25.0",
-    "opentelemetry-instrumentation-fastapi==0.64b0",
-    "prometheus-fastapi-instrumentator==8.0.2",
+    "opentelemetry-sdk==1.44.0",
+    "opentelemetry-exporter-otlp==1.44.0",
+    "opentelemetry-instrumentation-logging==0.65b0",
+    "opentelemetry-semantic-conventions==0.65b0",
+    "prometheus-client==0.26.0",
+    "opentelemetry-instrumentation-fastapi==0.65b0",
+    "prometheus-fastapi-instrumentator==8.1.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    "opentelemetry-instrumentation-sqlalchemy==0.64b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.65b0",
 {%- endif %}
 {%- endif %}
 ]
 
 [dependency-groups]
 dev = [
-    "ruff==0.15.20",
-    "ty==0.0.56",
-    "prek==0.4.8",
-    "complexipy==6.0.1",
-    "httpx2==2.5.0",
+    "ruff==0.16.8",
+    "ty==0.0.83",
+    "prek==0.5.3",
+    "complexipy==8.0.1",
+    "httpx2==2.13.1",
     "polyfactory==3.3.0",
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
@@ -53,7 +53,7 @@ dev = [
     "pytest-html==4.2.0",
     "freezegun==1.5.5",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    "testcontainers[postgres]==4.14.2",
+    "testcontainers[postgres]==4.15.0",
 {%- endif %}
 ]
 
@@ -67,7 +67,7 @@ required-environments = [
 ]
 
 [build-system]
-requires = ["hatchling==1.30.1"]
+requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
@@ -78,12 +78,6 @@ packages = ["app"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-filterwarnings = [
-    "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers.core.waiting_utils",
-    "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers.postgres",
-]
-{%- endif %}
 
 [tool.ty.rules]
 unused-type-ignore-comment = "ignore"
