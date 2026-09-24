@@ -39,7 +39,6 @@ def create_app() -> FastAPI:
 {%- endif %}
 {%- if cookiecutter.project_type != "fastapi_slim" %}
 
-    # Exception handlers must be registered last, after all routers and middleware
     include_exception_handlers(_app)
 {%- endif %}
     return _app
