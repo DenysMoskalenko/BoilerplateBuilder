@@ -20,22 +20,20 @@ from app.infrastructure.llms.provider_openai import get_openai_client
 {%- endif %}
 
 
-@pytest.mark.parametrize('fail_commit', [False, True])
-@pytest.mark.parametrize('path', ['/examples/1', '/health/ready', '/cached', '/failing'])
-async def test_session_finishes_before_response(monkeypatch, path: str, fail_commit: bool) -> None:
-    events = []
+@pytest.fixture
+def db_session(monkeypatch: pytest.MonkeyPatch) -> AsyncMock:
     session = AsyncMock(spec=AsyncSession)
+    monkeypatch.setattr(database, 'async_session_factory', lambda: lambda: session)
+    return session
 
-    async def commit() -> None:
-        events.append('commit')
-        if fail_commit:
-            raise RuntimeError('commit failed')
 
-    session.commit.side_effect = commit
-    session.rollback.side_effect = lambda: events.append('rollback')
-    session.close.side_effect = lambda: events.append('close')
-    factory = lambda: session  # noqa: E731
-    monkeypatch.setattr(database, 'async_session_factory', lambda: factory)
+@pytest.mark.parametrize('fail_commit', [False, True], ids=['success', 'commit_failure'])
+@pytest.mark.parametrize(('method', 'path', 'status'), [('DELETE', '/examples/1', 204), ('GET', '/health/ready', 200)])
+async def test_session_finishes_before_response(
+    db_session: AsyncMock, method: str, path: str, status: int, fail_commit: bool
+) -> None:
+    if fail_commit:
+        db_session.commit.side_effect = RuntimeError('commit failed')
     app = FastAPI()
     app.include_router(examples_router)
     app.include_router(health_router)
@@ -43,34 +41,62 @@ async def test_session_finishes_before_response(monkeypatch, path: str, fail_com
     app.dependency_overrides[get_bedrock_client] = lambda: SimpleNamespace(count_tokens=lambda **kwargs: {})
     app.dependency_overrides[get_openai_client] = lambda: SimpleNamespace(models=SimpleNamespace(list=AsyncMock()))
 {%- endif %}
+    sent_statuses = []
+
+    async def record_response(scope, receive, send) -> None:
+        async def record_send(message) -> None:
+            if message['type'] == 'http.response.start':
+                db_session.commit.assert_awaited_once()
+                db_session.close.assert_awaited_once()
+                sent_statuses.append(message['status'])
+            await send(message)
+
+        await app(scope, receive, record_send)
+
+    async with AsyncClient(transport=ASGITransport(app=record_response), base_url='http://test') as client:
+        if fail_commit:
+            with pytest.raises(RuntimeError, match=r'^commit failed$'):
+                await client.request(method, path)
+            assert sent_statuses == [500]
+        else:
+            response = await client.request(method, path)
+            assert response.status_code == status
+            assert sent_statuses == [status]
+            db_session.rollback.assert_not_awaited()
+
+
+async def test_session_rolls_back_and_preserves_endpoint_error(db_session: AsyncMock) -> None:
+    app = FastAPI()
+    error = RuntimeError('endpoint failed')
+
+    @app.get('/failing')
+    async def failing(service: Annotated[ExampleService, Depends()]) -> None:
+        raise error
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
+        with pytest.raises(RuntimeError, match=r'^endpoint failed$') as raised:
+            await client.get('/failing')
+
+    assert raised.value is error
+    db_session.rollback.assert_awaited_once()
+    db_session.close.assert_awaited_once()
+    db_session.commit.assert_not_awaited()
+
+
+async def test_session_is_cached_across_service_instances(db_session: AsyncMock) -> None:
+    app = FastAPI()
 
     @app.get('/cached')
     async def cached(
         first: Annotated[ExampleService, Depends(use_cache=False)],
         second: Annotated[ExampleService, Depends(use_cache=False)],
-    ) -> dict:
+    ) -> None:
         assert first is not second
-        assert first._session is second._session is session
-        return {}
 
-    @app.get('/failing')
-    async def failing(service: Annotated[ExampleService, Depends()]) -> None:
-        raise RuntimeError('endpoint failed')
+    async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
+        response = await client.get('/cached')
 
-    async def record_response(scope, receive, send) -> None:
-        async def record_send(message) -> None:
-            if message['type'] == 'http.response.start':
-                events.append('response')
-            await send(message)
-
-        await app(scope, receive, record_send)
-
-    transport = ASGITransport(app=record_response, raise_app_exceptions=False)
-    async with AsyncClient(transport=transport, base_url='http://test') as client:
-        response = await client.request('DELETE' if path == '/examples/1' else 'GET', path)
-
-    expected_status = 204 if path == '/examples/1' else 200
-    assert response.status_code == (500 if fail_commit or path == '/failing' else expected_status)
-    assert events == ['rollback' if path == '/failing' else 'commit', 'close', 'response']
-    session.close.assert_awaited_once()
+    assert response.status_code == 200
+    db_session.commit.assert_awaited_once()
+    db_session.close.assert_awaited_once()
 {%- endif %}

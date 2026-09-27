@@ -2,7 +2,7 @@
 
 {{ cookiecutter.project_description }}
 
-### Locally:
+### Run on the host
 
 1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
 2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
@@ -10,11 +10,15 @@
 4. Install project dependencies: `uv sync`
 5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-6. Start dependencies: `make up-dependencies`
+6. Start PostgreSQL only and wait until healthy: `make up-dependencies`
 7. Run migrations: `make migrate`
 8. Run app: `make run`
 {%- else %}
 6. Run app: `make run`
+{%- endif %}
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+
+For host development without a running telemetry collector, set `OBSERVABILITY_TRACING_ENABLED=false` in `.env`.
 {%- endif %}
 
 After start, API docs are available at:
@@ -30,9 +34,11 @@ Review and correct both `upgrade()` and `downgrade()` in the generated migration
 {%- endif %}
 {%- if cookiecutter.generate_local_otel_stack == "yes" %}
 
-### Local telemetry
+### Run the app and telemetry with Docker Compose
 
-Start the generated telemetry stack with `docker compose up -d`.
+As an alternative to running on the host, stop any `make run` process and run `docker compose up -d --build`.
+This starts the API on port 8000 together with the telemetry stack{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %} and PostgreSQL; migrations run on API startup{% endif %}.
+Use `docker compose down` before switching back to `make run`.
 Docker is needed to run the stack{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %} and DB tests{% endif %}, not to generate its files.
 {%- endif %}
 

@@ -21,7 +21,9 @@ from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentRes
 from tests.mocks.agent_mocks import build_mock_model, build_raising_model
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from app.domains.examples.service import ExampleService
+from app.domains.examples_agent.schemas import ExampleAgentToolExample
 from tests.api.test_examples import create_test_example
+from tests.mocks.agent_mocks import build_output_model_response
 {%- endif %}
 
 RATE_LIMITED_DETAIL = 'Too many requests to the AI provider. Please try again in a moment.'
@@ -85,10 +87,28 @@ class TestCreateExampleAgentResponse:
         ]
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 
+    @pytest.mark.parametrize(
+        'tool_names',
+        [
+            ('count_examples', 'count_examples'),
+            ('list_examples', 'list_examples'),
+            ('count_examples', 'list_examples'),
+        ],
+        ids=['count_twice', 'list_twice', 'mixed'],
+    )
     async def test_shared_session_tools_run_sequentially(
-        self, client: AsyncClient, session: AsyncSession, test_examples_agent, monkeypatch
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
+        monkeypatch: pytest.MonkeyPatch,
+        tool_names: tuple[str, str],
     ) -> None:
         example = await create_test_example(session, name='Shared session example')
+        expected_results = {
+            'count_examples': 1,
+            'list_examples': [ExampleAgentToolExample(id=example.id, name=example.name, description=example.description)],
+        }
         active = False
         calls = []
 
@@ -119,15 +139,14 @@ class TestCreateExampleAgentResponse:
         monkeypatch.setattr(ExampleService, 'list_examples', list_examples)
 
         def model(messages, info):
-            if not calls:
+            results = {part.tool_call_id: part.content for part in messages[-1].parts if isinstance(part, ToolReturnPart)}
+            if not results:
                 return ModelResponse(parts=[
-                    ToolCallPart('count_examples', {'payload': {}}, tool_call_id='count'),
-                    ToolCallPart('list_examples', {'payload': {}}, tool_call_id='list'),
+                    ToolCallPart(name, {'payload': {}}, tool_call_id=str(index))
+                    for index, name in enumerate(tool_names)
                 ])
-            results = {part.tool_name: part.content for part in messages[-1].parts if isinstance(part, ToolReturnPart)}
-            assert results['count_examples'] == 1
-            assert results['list_examples'][0].id == example.id
-            return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, {'answer': 'Found one example.'})])
+            assert results == {str(index): expected_results[name] for index, name in enumerate(tool_names)}
+            return build_output_model_response(info, ExampleAgentResponse(answer='Found one example.'))
 
         with test_examples_agent.override(model=FunctionModel(model)):
             response = await client.post(
@@ -136,6 +155,6 @@ class TestCreateExampleAgentResponse:
 
         assert response.status_code == 200
         assert response.json() == {'answer': 'Found one example.'}
-        assert sorted(calls) == ['count_examples', 'list_examples']
+        assert calls == list(tool_names)
 {%- endif %}
 {%- endif %}

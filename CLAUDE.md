@@ -63,8 +63,10 @@ Commands (from the generated `Makefile`, run **inside** a generated project):
 
 - `make run` — `python -m app.main`; uvicorn app factory on `0.0.0.0:8000` (`/docs`, `/redoc`)
 - `make lint` (ruff `check --fix` + format) · `make lint-no-format` · `make typecheck` (`ty check`) · `make test` (pytest) · `make test-coverage` (`--cov-fail-under=90`) · `make check` (lint + typecheck + coverage)
-- db types: `make up-dependencies` (docker-compose Postgres) · `make migrate` · `make migration MSG="…"` · `make upgrade` · `make downgrade`
+- db types: `make up-dependencies` (start only Postgres, wait until healthy) · `make migrate` · `make migration MSG="…"` · `make upgrade` · `make downgrade`
 - single test: `uv run pytest tests/api/test_examples.py::test_name -v`
+
+Host development uses `make run` (disable tracing in `.env` if no collector is running). With a local telemetry stack, `docker compose up -d --build` instead starts the API and telemetry together, plus Postgres and startup migrations for DB types. Stop the host API first; use `docker compose down` before switching back to host development so only one API binds port 8000.
 
 Package-by-feature FastAPI app under `app/`: business logic lives in vertical slices under `domains/`; cross-cutting technical code stays in `core/` and `infrastructure/`.
 

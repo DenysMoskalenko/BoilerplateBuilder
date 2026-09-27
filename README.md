@@ -106,7 +106,6 @@ pass `use_otel_observability=yes generate_local_otel_stack=no`. To disable both,
 `use_otel_observability=no generate_local_otel_stack=no`. Explicit `no/yes` is invalid and rejected.
 
 Docker is required for DB tests and running the local telemetry stack, not for generating its files.
-Start the local stack with `docker compose up -d` inside the generated project.
 
 ## After Generation
 
@@ -117,7 +116,7 @@ cd your-project
 # If not, run:
 uv sync
 
-# Run the app
+# Run the app on the host (disable tracing in .env if no collector is running)
 make run
 # http://localhost:8000/docs
 
@@ -129,10 +128,14 @@ make test
 For database types:
 
 ```bash
-make up-dependencies    # Start Postgres container
+make up-dependencies    # Start only Postgres and wait until healthy
 make migrate            # Apply migrations
 make run
 ```
+
+Alternatively, with the generated local stack, stop any host `make run` process and run
+`docker compose up -d --build`. This starts the API on port 8000, telemetry, and PostgreSQL for DB types;
+DB migrations run on API startup. Run `docker compose down` before returning to host development.
 
 ## Development Commands (Generated Project)
 
