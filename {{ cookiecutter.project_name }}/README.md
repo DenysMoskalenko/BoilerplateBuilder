@@ -21,6 +21,21 @@ After start, API docs are available at:
 - http://localhost:8000/docs - Interactive Swagger UI
 - http://localhost:8000/redoc - ReDoc documentation
 
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+
+### Database migrations
+
+After changing models, autogenerate a migration with `make migration MSG="describe the change"`.
+Review and correct both `upgrade()` and `downgrade()` in the generated migration, then apply it with `make migrate`.
+{%- endif %}
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+
+### Local telemetry
+
+Start the generated telemetry stack with `docker compose up -d`.
+Docker is needed to run the stack{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %} and DB tests{% endif %}, not to generate its files.
+{%- endif %}
+
 ### Before PR:
 
 1. Run linter using `make lint`

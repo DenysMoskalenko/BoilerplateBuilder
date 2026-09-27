@@ -34,26 +34,22 @@ def override_dependency(app: FastAPI, dependency: Callable, override: Callable) 
             route.app.dependency_overrides[dependency] = override
 
 
-def _remove_override(app: FastAPI, dependency: Callable) -> None:
-    app.dependency_overrides.pop(dependency, None)
-
-    for route in app.router.routes:
-        if isinstance(route, Mount) and isinstance(route.app, FastAPI):
-            route.app.dependency_overrides.pop(dependency, None)
-
-
 @contextmanager
 def temporary_override(app: FastAPI, dependency: Callable, override: Callable) -> Generator[None, None, None]:
     """Temporarily override a FastAPI dependency and restore the previous state on exit."""
-    previous = app.dependency_overrides.get(dependency)
+    previous = {app: app.dependency_overrides.get(dependency)}
+    for route in app.router.routes:
+        if isinstance(route, Mount) and isinstance(route.app, FastAPI):
+            previous[route.app] = route.app.dependency_overrides.get(dependency)
     override_dependency(app, dependency, override)
     try:
         yield
     finally:
-        if previous is not None:
-            override_dependency(app, dependency, previous)
-        else:
-            _remove_override(app, dependency)
+        for target, previous_override in previous.items():
+            if previous_override is not None:
+                target.dependency_overrides[dependency] = previous_override
+            else:
+                target.dependency_overrides.pop(dependency, None)
 
 
 @contextmanager

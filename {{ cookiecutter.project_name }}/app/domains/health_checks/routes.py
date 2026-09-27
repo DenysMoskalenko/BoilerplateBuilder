@@ -60,7 +60,7 @@ async def health_check_readiness(
 @router.get('/health/ready')
 async def health_check_readiness(
     response: Response,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: Annotated[AsyncSession, Depends(get_session, scope='function')],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> HealthCheckReadyResponse:
     db_status = await check_database_status(session)
@@ -100,7 +100,7 @@ async def health_check_readiness(
 @router.get('/health/ready')
 async def health_check_readiness(
     response: Response,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: Annotated[AsyncSession, Depends(get_session, scope='function')],
     bedrock_client: Annotated[BedrockRuntimeClient, Depends(get_bedrock_client)],
     openai_client: Annotated[AsyncOpenAI, Depends(get_openai_client)],
     settings: Annotated[Settings, Depends(get_settings)],

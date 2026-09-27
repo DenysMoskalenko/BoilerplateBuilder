@@ -6,11 +6,13 @@ from fastapi_pagination import Page
 from httpx2 import AsyncClient
 from pydantic import TypeAdapter
 import pytest
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.examples.schemas import Example, ExampleCreate
 from app.domains.examples.service import ExampleService
 from app.infrastructure.db.database import get_session
+from app.infrastructure.db.models.example import ExampleModel
 from tests.dependencies import SessionFixtureDoesNotSetExplicitly
 from tests.factories import ExampleCreateFactory
 
@@ -108,6 +110,39 @@ class TestExamplesList:
 
         examples = response.json()['items']
         assert examples == [matching_example.model_dump(mode='json')]
+
+    @pytest.mark.parametrize('sort_by', ['birthday', 'created_at', 'updated_at'])
+    @pytest.mark.parametrize('sort_order', ['asc', 'desc'])
+    async def test_list_paginates_tied_values(
+        self, session: AsyncSession, client: AsyncClient, sort_by: str, sort_order: str
+    ) -> None:
+        # Deliberately insert out of ID order so heap order cannot satisfy the tie-breaker.
+        for year, ids in [(2020, [30, 10, 20]), (2021, [60, 40, 50])]:
+            await session.execute(
+                insert(ExampleModel),
+                [
+                    {
+                        'id': example_id,
+                        'name': f'Example {example_id}',
+                        'description': 'Tied sorting values',
+                        'birthday': date(year, 1, 1),
+                        'created_at': datetime(year, 1, 1, tzinfo=UTC),
+                        'updated_at': datetime(year, 1, 1, tzinfo=UTC),
+                    }
+                    for example_id in ids
+                ],
+            )
+
+        actual_ids = []
+        for page in range(1, 4):
+            response = await client.get(
+                '/v1/examples', params={'page': page, 'size': 2, 'sort_by': sort_by, 'sort_order': sort_order}
+            )
+            assert response.status_code == 200
+            assert response.json()['total'] == 6
+            actual_ids.extend(item['id'] for item in response.json()['items'])
+
+        assert actual_ids == ([10, 20, 30, 40, 50, 60] if sort_order == 'asc' else [40, 50, 60, 10, 20, 30])
 
     async def test_list_filters_by_ids(self, session: AsyncSession, client: AsyncClient) -> None:
         first_example = await create_test_example(session)

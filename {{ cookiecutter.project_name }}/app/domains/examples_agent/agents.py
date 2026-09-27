@@ -49,11 +49,11 @@ def build_examples_agent(model: Model) -> Agent[ExampleAgentDeps, ExampleAgentRe
     # Add agent tools here
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 
-    @agent.tool
+    @agent.tool(sequential=True)
     async def count_examples(ctx: RunContext[ExampleAgentDeps], payload: CountExamplesToolInput) -> int:
         return await ctx.deps.example_service.count_examples(payload.filters)
 
-    @agent.tool
+    @agent.tool(sequential=True)
     async def list_examples(
         ctx: RunContext[ExampleAgentDeps], payload: ListExamplesToolInput
     ) -> list[ExampleAgentToolExample]:

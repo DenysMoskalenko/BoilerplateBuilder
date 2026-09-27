@@ -31,14 +31,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--use-otel',
         choices=('yes', 'no'),
-        default='no',
-        help='Toggle use_otel_observability cookiecutter answer.',
+        default='yes',
+        help='Toggle use_otel_observability cookiecutter answer (default: yes).',
     )
     parser.add_argument(
         '--local-otel-stack',
         choices=('yes', 'no'),
-        default='no',
-        help='Toggle generate_local_otel_stack answer.',
+        default='yes',
+        help='Toggle generate_local_otel_stack answer (default: yes).',
     )
     parser.add_argument(
         '--output-dir',

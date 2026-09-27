@@ -44,7 +44,12 @@ def async_session_factory() -> async_sessionmaker:
 
 
 async def get_session() -> AsyncIterable[AsyncSession]:
-    """FastAPI uses per-request-cache if we called functions by Depends."""
+    """Share a cached session via Depends; the provider owns commit/rollback.
+
+    Ordinary endpoints use scope='function' to finish the transaction before responding.
+    Streams consuming the session after the endpoint returns require scope='request';
+    writes must commit before streaming starts.
+    """
     async with open_db_session() as session:
         yield session
 

@@ -7,7 +7,6 @@ from app.domains.examples.schemas import ExampleCreate
 
 class ExampleCreateFactory(ModelFactory[ExampleCreate]):
     __model__ = ExampleCreate
-    __check_model__ = False
 
     name = Use(lambda: ExampleCreateFactory.__faker__.sentence(nb_words=3).rstrip('.'))
     description = Use(lambda: ExampleCreateFactory.__faker__.text(max_nb_chars=500))

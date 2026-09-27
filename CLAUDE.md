@@ -19,9 +19,9 @@ See `AGENTS.md` for contributor-facing guidelines (commit/PR conventions, etc.).
 
 | Option | Values | Notes |
 |--------|--------|-------|
-| `project_type` | `fastapi_db_agent` / `fastapi_db` / `fastapi_agent` / `fastapi_slim` | `db_agent` = everything; `slim` = health checks + Docker + tests only |
-| `use_otel_observability` | `no` / `yes` | adds `app/core/observability` + OTEL/Prometheus deps |
-| `generate_local_otel_stack` | `no` / `yes` | **requires `use_otel_observability=yes`** (else the post-gen hook exits 1 and no project is created) |
+| `project_type` | `fastapi_db_agent` / `fastapi_db` / `fastapi_agent` / `fastapi_slim` | `db_agent` = everything; `slim` = health checks + Docker + tests; every type includes telemetry by default |
+| `use_otel_observability` | `yes` / `no` | enabled by default; adds `app/core/observability` + OTEL/Prometheus deps |
+| `generate_local_otel_stack` | `yes` / `no` | enabled by default; **requires `use_otel_observability=yes`** (else the post-gen hook exits 1 and no project is created) |
 | `use_github_actions`, `initialize_git` | `yes` / `no` | |
 | `python_version` | `3.14` / `3.13` / `3.12` / `3.11` | |
 | `extract_to_current_dir` | `Create New` / `Extract Here` | "Extract Here" merges output into the parent dir, for adding the template to an existing repo |
@@ -41,16 +41,17 @@ After cookiecutter renders, `hooks/post_gen_project.py` runs this pipeline (orde
 ## Working on the template
 
 ```bash
-# Generate one type to inspect output (skip git/dep side effects for a quick look)
+# Generate one type to inspect output (dependencies and hooks are still set up)
 cookiecutter . --no-input project_type=fastapi_db initialize_git=no
 
 # Canonical validation: generate each type, then uv sync + make lint + make typecheck + make test inside each
-python -m scripts.template_smoke_test                                  # all types, python 3.14, no otel
+python -m scripts.template_smoke_test                                  # all types, python 3.14, telemetry + local stack
 python -m scripts.template_smoke_test --project-types fastapi_slim --keep-builds
-python -m scripts.template_smoke_test --use-otel yes --local-otel-stack yes
+python -m scripts.template_smoke_test --use-otel yes --local-otel-stack no
+python -m scripts.template_smoke_test --use-otel no --local-otel-stack no
 ```
 
-`scripts/template_smoke_test.py` is the real test harness (generated output goes under `.template-builds/`). It needs `cookiecutter`, `uv`, `make`, and **Docker** (db types use testcontainers). Mirror it for any non-trivial change.
+`scripts/template_smoke_test.py` is the real test harness (generated output goes under `.template-builds/`). It needs `cookiecutter`, `uv`, `make`, and **Docker for DB tests** (testcontainers). Docker is also needed to run the local telemetry stack, but not to generate its files. Mirror it for any non-trivial change.
 
 A template change is correct only when **every affected `project_type` still generates, lints, type-checks, and tests green** — and for observability work, across all four `use_otel_observability`/`generate_local_otel_stack` pairs: `yes/yes`, `yes/no`, `no/no`, and `no/yes` (which must fail early and create nothing). This is exactly what `.github/workflows/test-templates.yml` enforces: a `4 types × 4 python × 3 observability profiles` lint/typecheck/test matrix, a generation-only file-presence matrix, and a `fastapi_db` smoke job.
 
@@ -69,7 +70,7 @@ Package-by-feature FastAPI app under `app/`: business logic lives in vertical sl
 
 - **Entry / wiring** — `main.py::create_app()` is the app factory. `router.py::create_router()` aggregates the domain routers: `health_checks` (always, at root) plus `examples` (db) and `examples_agent` (agent) under `/v1`. Exception handlers are resolved by exception class MRO, so their order relative to routers and middleware does not matter; they must be registered before the first request, when Starlette builds the middleware stack and copies them.
 - **Config** — `core/config.py`: a frozen pydantic-settings `Settings`, exposed via `@lru_cache get_settings()`, loaded from `.env`.
-- **Dependency Injection via FastAPI `Depends` throughout** — services receive collaborators in `__init__` (`Annotated[AsyncSession, Depends(get_session)]`); routes inject services with `Annotated[ExampleService, Depends()]`. Convention: public methods at the top of a class, private `_helpers` at the bottom.
+- **Dependency Injection via FastAPI `Depends` throughout** — services receive collaborators in `__init__` (`Annotated[AsyncSession, Depends(get_session, scope='function')]`); routes inject services with `Annotated[ExampleService, Depends()]`. Convention: public methods at the top of a class, private `_helpers` at the bottom.
 - **`domains/<feature>/`** — one vertical slice per feature (`routes.py` + `schemas.py` + `service.py`), each domain flat until a concern genuinely needs 2+ files (then it grows a subpackage with a facade `__init__.py`; the `examples_agent` domain's `schemas/` split into `schemas_api.py` + `schemas_agent.py` is the reference). `domains/README.md` documents the conventions. Shipped domains: `health_checks` (all types), `examples` (db), `examples_agent` (agent).
 - **`infrastructure/db`** (async SQLAlchemy 2.0, Alembic, fastapi-pagination; **all** models live in `db/models/` for single-metadata autogeneration) and **`infrastructure/llms`** (OpenAI + Bedrock model registry).
 - **`domains/examples_agent/`** (pydantic-ai) — `build_examples_agent(model)` constructs the `Agent`, `get_examples_agent` is its FastAPI dependency, tools are registered with `@agent.tool`.
