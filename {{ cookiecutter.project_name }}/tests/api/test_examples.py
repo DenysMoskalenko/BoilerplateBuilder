@@ -1,16 +1,21 @@
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from datetime import date, datetime, timedelta, UTC
+from unittest.mock import AsyncMock
 
 from fastapi import FastAPI
 from fastapi_pagination import Page
-from httpx2 import AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from pydantic import TypeAdapter
 import pytest
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.examples.routes import router as examples_router
 from app.domains.examples.schemas import Example, ExampleCreate
 from app.domains.examples.service import ExampleService
+from app.infrastructure.db import database
 from app.infrastructure.db.database import get_session
+from app.infrastructure.db.models.example import ExampleModel
 from tests.dependencies import SessionFixtureDoesNotSetExplicitly
 from tests.factories import ExampleCreateFactory
 
@@ -108,6 +113,21 @@ class TestExamplesList:
 
         examples = response.json()['items']
         assert examples == [matching_example.model_dump(mode='json')]
+
+    async def test_list_breaks_sorting_ties_by_id(self, session: AsyncSession, client: AsyncClient) -> None:
+        # Rows from one transaction share created_at (the default sort); inserting out of id order
+        # keeps physical row order from passing as the tie-breaker.
+        await session.execute(
+            insert(ExampleModel),
+            [{'id': example_id, 'name': f'Example {example_id}', 'description': 'Tied'} for example_id in (3, 1, 2)],
+        )
+
+        ids = []
+        for page in (1, 2, 3):
+            response = await client.get('/v1/examples', params={'page': page, 'size': 1})
+            ids += [item['id'] for item in response.json()['items']]
+
+        assert ids == [1, 2, 3]
 
     async def test_list_filters_by_ids(self, session: AsyncSession, client: AsyncClient) -> None:
         first_example = await create_test_example(session)
@@ -211,6 +231,20 @@ class TestExamplesDelete:
         response = await client.delete(f'/v1/examples/{unreal_id}')
 
         assert response.status_code == 204
+
+    async def test_fail_commit(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Guards scope='function' on get_session: with request scope, commit runs after 204 is already sent
+        failing_session = AsyncMock(spec=AsyncSession)
+        failing_session.commit.side_effect = RuntimeError('commit failed')
+        monkeypatch.setattr(database, 'async_session_factory', lambda: lambda: failing_session)
+        app = FastAPI()
+        app.include_router(examples_router)
+        transport = ASGITransport(app=app, raise_app_exceptions=False)
+
+        async with AsyncClient(transport=transport, base_url='http://test') as client:
+            response = await client.delete('/examples/1')
+
+        assert response.status_code == 500
 
 
 class TestSessionFixtureTeardown:

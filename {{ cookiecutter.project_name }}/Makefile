@@ -25,7 +25,7 @@ run:
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
 up-dependencies:
-	docker compose up
+	docker compose up -d --wait {{ cookiecutter.project_name.lower() }}-db
 
 migration:
 	uv run alembic revision --autogenerate -m "$(MSG)"

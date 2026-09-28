@@ -1,15 +1,31 @@
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+import asyncio
+{%- endif %}
 import logging
 
 from botocore.exceptions import ReadTimeoutError
 from httpx2 import AsyncClient
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+from pydantic_ai.messages import ModelResponse, ToolCallPart
+from pydantic_ai.models.function import AgentInfo, FunctionModel
+{%- endif %}
 import pytest
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+from sqlalchemy.ext.asyncio import AsyncSession
+{%- endif %}
 
 from app.core.enums import AIModelName
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+from app.domains.examples.service import ExampleService
+{%- endif %}
 from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentResponse
 from tests.mocks.agent_mocks import build_mock_model, build_raising_model
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+from tests.mocks.agent_mocks import build_output_model_response
+{%- endif %}
 
 RATE_LIMITED_DETAIL = 'Too many requests to the AI provider. Please try again in a moment.'
 UNAVAILABLE_DETAIL = 'AI provider temporarily unavailable. Please retry shortly.'
@@ -70,4 +86,41 @@ class TestCreateExampleAgentResponse:
         assert [record.levelno for record in caplog.records if record.name == 'app.core.exception_handlers'] == [
             expected_log_level
         ]
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+
+    @pytest.mark.parametrize('tool_name', ['count_examples', 'list_examples'])
+    async def test_shared_session_tool_calls_do_not_overlap(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
+        monkeypatch: pytest.MonkeyPatch,
+        tool_name: str,
+    ) -> None:
+        service_method = getattr(ExampleService, tool_name)
+        running = []
+
+        async def exclusive_service_method(*args, **kwargs):
+            assert not running, 'Tool calls overlap on the shared AsyncSession'
+            running.append(tool_name)
+            try:
+                await asyncio.sleep(0)  # yield so a concurrently scheduled call would start here
+                return await service_method(*args, **kwargs)
+            finally:
+                running.pop()
+
+        monkeypatch.setattr(ExampleService, tool_name, exclusive_service_method)
+
+        def call_tool_twice(messages: list, info: AgentInfo) -> ModelResponse:
+            if len(messages) == 1:
+                return ModelResponse(parts=[ToolCallPart(tool_name, {'payload': {}}) for _ in range(2)])
+            return build_output_model_response(info, ExampleAgentResponse(answer='Done.'))
+
+        with test_examples_agent.override(model=FunctionModel(call_tool_twice)):
+            response = await client.post(
+                '/v1/agents/examples/conversations', json={'model': 'gpt-5.4', 'question': 'How many examples?'}
+            )
+
+        assert response.status_code == 200
+{%- endif %}
 {%- endif %}

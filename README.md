@@ -1,6 +1,6 @@
 # BoilerplateBuilder
 
-Cookiecutter template for production-ready FastAPI applications. Generates a fully configured project with linting, testing, Docker, CI/CD, and optional database, AI agent, or observability support.
+Cookiecutter template for production-ready FastAPI applications. Generates a fully configured project with linting, testing, Docker, CI/CD, and optional database and AI agent support, plus telemetry enabled by default.
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 | **`fastapi_db_agent`** | FastAPI + PostgreSQL + AI agent (pydantic-ai). The full setup. |
 | **`fastapi_db`** | FastAPI + PostgreSQL. CRUD API with migrations, pagination, filtering. |
 | **`fastapi_agent`** | FastAPI + AI agent. No database, just an LLM-powered endpoint. |
-| **`fastapi_slim`** | Minimal FastAPI. Health checks, Docker, tests — nothing else. |
+| **`fastapi_slim`** | Minimal FastAPI. Health checks, Docker, tests, and default telemetry. |
 
 All types share: Python 3.11–3.14, uv, Ruff + ty, pytest, Docker, Makefile, pre-commit (via prek), and optional GitHub Actions.
 
@@ -40,7 +40,7 @@ All types share: Python 3.11–3.14, uv, Ruff + ty, pytest, Docker, Makefile, pr
 - Example agent with tool usage and conversation API
 - Agent test mocks for deterministic testing
 
-**Observability** (optional, any type):
+**Observability** (enabled by default for every type; opt-outs below):
 - OpenTelemetry tracing, Prometheus metrics, structured JSON logging
 - Custom metric decorators (`@track_inflight`, `@increment_after`, `@increment_on_error`, `@track_latency`)
 - Local dev stack: Grafana, Tempo, Prometheus, Loki, OTEL Collector, Grafana Alloy
@@ -98,8 +98,13 @@ All options with defaults:
 | `python_version` | `3.14` | `3.14`, `3.13`, `3.12`, `3.11` |
 | `use_github_actions` | `yes` | `yes`, `no` |
 | `initialize_git` | `yes` | `yes`, `no` |
-| `use_otel_observability` | `no` | `yes`, `no` |
-| `generate_local_otel_stack` | `no` | `yes`, `no` (requires `use_otel_observability=yes`) |
+| `use_otel_observability` | `yes` | `yes`, `no` |
+| `generate_local_otel_stack` | `yes` | `yes`, `no` (requires `use_otel_observability=yes`) |
+
+To disable telemetry, pass `use_otel_observability=no generate_local_otel_stack=no`: the local stack defaults to `yes`,
+and `no/yes` is rejected.
+
+Docker is required for DB tests and to run the local telemetry stack, not to generate it.
 
 ## After Generation
 
@@ -110,7 +115,7 @@ cd your-project
 # If not, run:
 uv sync
 
-# Run the app
+# Run the app on the host (disable tracing in .env if no collector is running)
 make run
 # http://localhost:8000/docs
 
@@ -122,10 +127,12 @@ make test
 For database types:
 
 ```bash
-make up-dependencies    # Start Postgres container
+make up-dependencies    # Start Postgres
 make migrate            # Apply migrations
 make run
 ```
+
+With the local stack, `docker compose up -d --build` runs the API, telemetry, and Postgres together instead.
 
 ## Development Commands (Generated Project)
 

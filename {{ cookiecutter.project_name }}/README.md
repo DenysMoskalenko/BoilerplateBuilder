@@ -2,7 +2,7 @@
 
 {{ cookiecutter.project_description }}
 
-### Locally:
+### Run on the host
 
 1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
 2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
@@ -10,16 +10,35 @@
 4. Install project dependencies: `uv sync`
 5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-6. Start dependencies: `make up-dependencies`
+6. Start PostgreSQL: `make up-dependencies`
 7. Run migrations: `make migrate`
 8. Run app: `make run`
 {%- else %}
 6. Run app: `make run`
 {%- endif %}
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+
+For host development without a running telemetry collector, set `OBSERVABILITY_TRACING_ENABLED=false` in `.env`.
+{%- endif %}
 
 After start, API docs are available at:
 - http://localhost:8000/docs - Interactive Swagger UI
 - http://localhost:8000/redoc - ReDoc documentation
+
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+
+### Database migrations
+
+After changing models, autogenerate a migration with `make migration MSG="describe the change"`.
+Review and correct both `upgrade()` and `downgrade()` in the generated migration, then apply it with `make migrate`.
+{%- endif %}
+{%- if cookiecutter.generate_local_otel_stack == "yes" %}
+
+### Run with Docker Compose
+
+`docker compose up -d --build` starts the API on port 8000 with the local telemetry stack{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}, PostgreSQL, and startup migrations{% endif %}.
+Both it and `make run` bind port 8000: stop one before starting the other (`docker compose down`).
+{%- endif %}
 
 ### Before PR:
 

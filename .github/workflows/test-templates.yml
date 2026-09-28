@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python_version: [ "3.11", "3.12" ]
+        python_version: [ "3.11", "3.12", "3.13", "3.14" ]
     steps:
       - name: Checkout cookiecutter template
         uses: actions/checkout@v7.0.1
@@ -218,6 +218,10 @@ jobs:
                     echo "❌ local_telemetry should exist when local stack is enabled"
                     exit 1
                   fi
+                  if [[ "$generate_local_stack" == "no" && -d "$project_name/local_telemetry" ]]; then
+                    echo "❌ local_telemetry should not exist when local stack is disabled"
+                    exit 1
+                  fi
                 else
                   if [[ -d "$project_name/app/core/observability" ]]; then
                     echo "❌ app/core/observability should not exist when observability is disabled"
@@ -260,5 +264,4 @@ jobs:
       - name: Run template smoke test for fastapi_db
         run: |
           python -m scripts.template_smoke_test \
-            --project-types fastapi_db \
-            --use-otel no
+            --project-types fastapi_db

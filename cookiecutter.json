@@ -28,11 +28,11 @@
         "no"
     ],
     "use_otel_observability": [
-        "no",
-        "yes"
+        "yes",
+        "no"
     ],
     "generate_local_otel_stack": [
-        "no",
-        "yes"
+        "yes",
+        "no"
     ]
 }

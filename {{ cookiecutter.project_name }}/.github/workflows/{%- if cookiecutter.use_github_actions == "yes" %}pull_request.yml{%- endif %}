@@ -20,6 +20,8 @@ jobs:
       - name: Signal if cache restored
         if: steps.setup-uv.outputs.cache-hit == 'true'
         run: echo "Cache was restored"
+      - name: Install locked dependencies
+        run: uv sync --locked
       - name: Run linter
         run: uv run ruff check
       - name: Check formatting
@@ -43,5 +45,7 @@ jobs:
       - name: Signal if cache restored
         if: steps.setup-uv.outputs.cache-hit == 'true'
         run: echo "Cache was restored"
+      - name: Install locked dependencies
+        run: uv sync --locked
       - name: Run tests
         run: uv run pytest

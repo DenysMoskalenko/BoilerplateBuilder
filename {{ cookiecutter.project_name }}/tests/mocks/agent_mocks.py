@@ -24,7 +24,7 @@ def generate_test_agent(
 
 def build_mock_model(response: BaseModel) -> FunctionModel:
     def _cb(messages: list, info: AgentInfo) -> ModelResponse:
-        return _build_output_model_response(info, response)
+        return build_output_model_response(info, response)
 
     return FunctionModel(_cb)
 
@@ -36,7 +36,7 @@ def build_raising_model(exc: Exception) -> FunctionModel:
     return FunctionModel(_cb)
 
 
-def _build_output_model_response(info: AgentInfo, response: BaseModel) -> ModelResponse:
+def build_output_model_response(info: AgentInfo, response: BaseModel) -> ModelResponse:
     payload = response.model_dump(mode='json')
     payload_keys = set(payload.keys())
     for output_tool in info.output_tools:

@@ -30,7 +30,7 @@ _logger = getLogger(__name__)
 class ExampleService:
     EXAMPLE_LIST_ADAPTER: TypeAdapter[list[Example]] = TypeAdapter(list[Example])
 
-    def __init__(self, session: Annotated[AsyncSession, Depends(get_session)]) -> None:
+    def __init__(self, session: Annotated[AsyncSession, Depends(get_session, scope='function')]) -> None:
         self._session = session
 
     async def get_example_by_id(self, example_id: int) -> Example:
@@ -53,7 +53,7 @@ class ExampleService:
 {%- endif %}
         query = select(ExampleModel)
         query = self._apply_filters(query, filters)
-        query = sorting.sort_query(query, ExampleModel)
+        query = sorting.sort_query(query, ExampleModel).order_by(ExampleModel.id)
         return await apaginate(
             self._session,
             query,
