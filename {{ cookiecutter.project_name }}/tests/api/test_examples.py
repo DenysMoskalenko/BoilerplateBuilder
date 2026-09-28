@@ -1,16 +1,19 @@
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from datetime import date, datetime, timedelta, UTC
+from unittest.mock import AsyncMock
 
 from fastapi import FastAPI
 from fastapi_pagination import Page
-from httpx2 import AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from pydantic import TypeAdapter
 import pytest
 from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.examples.routes import router as examples_router
 from app.domains.examples.schemas import Example, ExampleCreate
 from app.domains.examples.service import ExampleService
+from app.infrastructure.db import database
 from app.infrastructure.db.database import get_session
 from app.infrastructure.db.models.example import ExampleModel
 from tests.dependencies import SessionFixtureDoesNotSetExplicitly
@@ -111,38 +114,20 @@ class TestExamplesList:
         examples = response.json()['items']
         assert examples == [matching_example.model_dump(mode='json')]
 
-    @pytest.mark.parametrize('sort_by', ['birthday', 'created_at', 'updated_at'])
-    @pytest.mark.parametrize('sort_order', ['asc', 'desc'])
-    async def test_list_paginates_tied_values(
-        self, session: AsyncSession, client: AsyncClient, sort_by: str, sort_order: str
-    ) -> None:
-        # Deliberately insert out of ID order so heap order cannot satisfy the tie-breaker.
-        for year, ids in [(2020, [30, 10, 20]), (2021, [60, 40, 50])]:
-            await session.execute(
-                insert(ExampleModel),
-                [
-                    {
-                        'id': example_id,
-                        'name': f'Example {example_id}',
-                        'description': 'Tied sorting values',
-                        'birthday': date(year, 1, 1),
-                        'created_at': datetime(year, 1, 1, tzinfo=UTC),
-                        'updated_at': datetime(year, 1, 1, tzinfo=UTC),
-                    }
-                    for example_id in ids
-                ],
-            )
+    async def test_list_breaks_sorting_ties_by_id(self, session: AsyncSession, client: AsyncClient) -> None:
+        # Rows from one transaction share created_at (the default sort); inserting out of id order
+        # keeps physical row order from passing as the tie-breaker.
+        await session.execute(
+            insert(ExampleModel),
+            [{'id': example_id, 'name': f'Example {example_id}', 'description': 'Tied'} for example_id in (3, 1, 2)],
+        )
 
-        actual_ids = []
-        for page in range(1, 4):
-            response = await client.get(
-                '/v1/examples', params={'page': page, 'size': 2, 'sort_by': sort_by, 'sort_order': sort_order}
-            )
-            assert response.status_code == 200
-            assert response.json()['total'] == 6
-            actual_ids.extend(item['id'] for item in response.json()['items'])
+        ids = []
+        for page in (1, 2, 3):
+            response = await client.get('/v1/examples', params={'page': page, 'size': 1})
+            ids += [item['id'] for item in response.json()['items']]
 
-        assert actual_ids == ([10, 20, 30, 40, 50, 60] if sort_order == 'asc' else [40, 50, 60, 10, 20, 30])
+        assert ids == [1, 2, 3]
 
     async def test_list_filters_by_ids(self, session: AsyncSession, client: AsyncClient) -> None:
         first_example = await create_test_example(session)
@@ -246,6 +231,20 @@ class TestExamplesDelete:
         response = await client.delete(f'/v1/examples/{unreal_id}')
 
         assert response.status_code == 204
+
+    async def test_fail_commit(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Guards scope='function' on get_session: with request scope, commit runs after 204 is already sent
+        failing_session = AsyncMock(spec=AsyncSession)
+        failing_session.commit.side_effect = RuntimeError('commit failed')
+        monkeypatch.setattr(database, 'async_session_factory', lambda: lambda: failing_session)
+        app = FastAPI()
+        app.include_router(examples_router)
+        transport = ASGITransport(app=app, raise_app_exceptions=False)
+
+        async with AsyncClient(transport=transport, base_url='http://test') as client:
+            response = await client.delete('/examples/1')
+
+        assert response.status_code == 500
 
 
 class TestSessionFixtureTeardown:

@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python_version: [ "3.11", "3.12", "3.14" ]
+        python_version: [ "3.11", "3.12", "3.13", "3.14" ]
     steps:
       - name: Checkout cookiecutter template
         uses: actions/checkout@v7.0.1
@@ -109,18 +109,6 @@ jobs:
 
       - name: Test template generation with different options
         run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          from scripts.template_smoke_test import parse_args
-
-          defaults = json.loads(Path('cookiecutter.json').read_text())
-          assert defaults['use_otel_observability'][0] == 'yes'
-          assert defaults['generate_local_otel_stack'][0] == 'yes'
-          args = parse_args()
-          assert (args.use_otel, args.local_otel_stack) == ('yes', 'yes')
-          PY
-
           for project_type in fastapi_db_agent fastapi_db fastapi_agent fastapi_slim; do
             for github_actions in yes no; do
               for observability_pair in yes:yes yes:no no:no no:yes; do

@@ -19,9 +19,9 @@ See `AGENTS.md` for contributor-facing guidelines (commit/PR conventions, etc.).
 
 | Option | Values | Notes |
 |--------|--------|-------|
-| `project_type` | `fastapi_db_agent` / `fastapi_db` / `fastapi_agent` / `fastapi_slim` | `db_agent` = everything; `slim` = health checks + Docker + tests; every type includes telemetry by default |
-| `use_otel_observability` | `yes` / `no` | enabled by default; adds `app/core/observability` + OTEL/Prometheus deps |
-| `generate_local_otel_stack` | `yes` / `no` | enabled by default; **requires `use_otel_observability=yes`** (else the post-gen hook exits 1 and no project is created) |
+| `project_type` | `fastapi_db_agent` / `fastapi_db` / `fastapi_agent` / `fastapi_slim` | `db_agent` = everything; `slim` = health checks + Docker + tests |
+| `use_otel_observability` | `yes` / `no` | adds `app/core/observability` + OTEL/Prometheus deps |
+| `generate_local_otel_stack` | `yes` / `no` | **requires `use_otel_observability=yes`** (else the post-gen hook exits 1 and no project is created) |
 | `use_github_actions`, `initialize_git` | `yes` / `no` | |
 | `python_version` | `3.14` / `3.13` / `3.12` / `3.11` | |
 | `extract_to_current_dir` | `Create New` / `Extract Here` | "Extract Here" merges output into the parent dir, for adding the template to an existing repo |
@@ -51,7 +51,7 @@ python -m scripts.template_smoke_test --use-otel yes --local-otel-stack no
 python -m scripts.template_smoke_test --use-otel no --local-otel-stack no
 ```
 
-`scripts/template_smoke_test.py` is the real test harness (generated output goes under `.template-builds/`). It needs `cookiecutter`, `uv`, `make`, and **Docker for DB tests** (testcontainers). Docker is also needed to run the local telemetry stack, but not to generate its files. Mirror it for any non-trivial change.
+`scripts/template_smoke_test.py` is the real test harness (generated output goes under `.template-builds/`). It needs `cookiecutter`, `uv`, `make`, and **Docker** for DB types (testcontainers); generating the local telemetry stack does not need Docker. Mirror it for any non-trivial change.
 
 A template change is correct only when **every affected `project_type` still generates, lints, type-checks, and tests green** — and for observability work, across all four `use_otel_observability`/`generate_local_otel_stack` pairs: `yes/yes`, `yes/no`, `no/no`, and `no/yes` (which must fail early and create nothing). This is exactly what `.github/workflows/test-templates.yml` enforces: a `4 types × 4 python × 3 observability profiles` lint/typecheck/test matrix, a generation-only file-presence matrix, and a `fastapi_db` smoke job.
 
@@ -63,10 +63,8 @@ Commands (from the generated `Makefile`, run **inside** a generated project):
 
 - `make run` — `python -m app.main`; uvicorn app factory on `0.0.0.0:8000` (`/docs`, `/redoc`)
 - `make lint` (ruff `check --fix` + format) · `make lint-no-format` · `make typecheck` (`ty check`) · `make test` (pytest) · `make test-coverage` (`--cov-fail-under=90`) · `make check` (lint + typecheck + coverage)
-- db types: `make up-dependencies` (start only Postgres, wait until healthy) · `make migrate` · `make migration MSG="…"` · `make upgrade` · `make downgrade`
+- db types: `make up-dependencies` (Postgres container only) · `make migrate` · `make migration MSG="…"` · `make upgrade` · `make downgrade`
 - single test: `uv run pytest tests/api/test_examples.py::test_name -v`
-
-Host development uses `make run` (disable tracing in `.env` if no collector is running). With a local telemetry stack, `docker compose up -d --build` instead starts the API and telemetry together, plus Postgres and startup migrations for DB types. Stop the host API first; use `docker compose down` before switching back to host development so only one API binds port 8000.
 
 Package-by-feature FastAPI app under `app/`: business logic lives in vertical slices under `domains/`; cross-cutting technical code stays in `core/` and `infrastructure/`.
 

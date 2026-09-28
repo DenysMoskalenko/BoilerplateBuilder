@@ -108,7 +108,6 @@ def remove_empty_files():
             "migrations",
             "alembic.ini",
             "tests/api/test_examples.py",
-            "tests/unit/test_database.py",
             "tests/api/test_agents.py",
             "tests/factories.py",
             "tests/mocks",
@@ -137,7 +136,6 @@ def remove_empty_files():
             "migrations",
             "alembic.ini",
             "tests/api/test_examples.py",
-            "tests/unit/test_database.py",
             "tests/factories.py",
         ]
         for p in paths_to_remove:

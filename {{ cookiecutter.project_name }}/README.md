@@ -10,7 +10,7 @@
 4. Install project dependencies: `uv sync`
 5. Edit `.env` file with your real values if needed (check `dist.env` for reference)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-6. Start PostgreSQL only and wait until healthy: `make up-dependencies`
+6. Start PostgreSQL: `make up-dependencies`
 7. Run migrations: `make migrate`
 8. Run app: `make run`
 {%- else %}
@@ -34,12 +34,10 @@ Review and correct both `upgrade()` and `downgrade()` in the generated migration
 {%- endif %}
 {%- if cookiecutter.generate_local_otel_stack == "yes" %}
 
-### Run the app and telemetry with Docker Compose
+### Run with Docker Compose
 
-As an alternative to running on the host, stop any `make run` process and run `docker compose up -d --build`.
-This starts the API on port 8000 together with the telemetry stack{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %} and PostgreSQL; migrations run on API startup{% endif %}.
-Use `docker compose down` before switching back to `make run`.
-Docker is needed to run the stack{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %} and DB tests{% endif %}, not to generate its files.
+`docker compose up -d --build` starts the API on port 8000 with the local telemetry stack{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}, PostgreSQL, and startup migrations{% endif %}.
+Both it and `make run` bind port 8000: stop one before starting the other (`docker compose down`).
 {%- endif %}
 
 ### Before PR:

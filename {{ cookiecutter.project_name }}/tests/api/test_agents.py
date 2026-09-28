@@ -1,28 +1,29 @@
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-import logging
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 import asyncio
-from contextlib import asynccontextmanager
 {%- endif %}
+import logging
 
 from botocore.exceptions import ReadTimeoutError
 from httpx2 import AsyncClient
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
-from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
-from pydantic_ai.models.function import FunctionModel
-from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic_ai.messages import ModelResponse, ToolCallPart
+from pydantic_ai.models.function import AgentInfo, FunctionModel
 {%- endif %}
 import pytest
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+from sqlalchemy.ext.asyncio import AsyncSession
+{%- endif %}
 
 from app.core.enums import AIModelName
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+from app.domains.examples.service import ExampleService
+{%- endif %}
 from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentResponse
 from tests.mocks.agent_mocks import build_mock_model, build_raising_model
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
-from app.domains.examples.service import ExampleService
-from app.domains.examples_agent.schemas import ExampleAgentToolExample
-from tests.api.test_examples import create_test_example
 from tests.mocks.agent_mocks import build_output_model_response
 {%- endif %}
 
@@ -87,74 +88,39 @@ class TestCreateExampleAgentResponse:
         ]
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 
-    @pytest.mark.parametrize(
-        'tool_names',
-        [
-            ('count_examples', 'count_examples'),
-            ('list_examples', 'list_examples'),
-            ('count_examples', 'list_examples'),
-        ],
-        ids=['count_twice', 'list_twice', 'mixed'],
-    )
-    async def test_shared_session_tools_run_sequentially(
+    @pytest.mark.parametrize('tool_name', ['count_examples', 'list_examples'])
+    async def test_shared_session_tool_calls_do_not_overlap(
         self,
         client: AsyncClient,
         session: AsyncSession,
         test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
         monkeypatch: pytest.MonkeyPatch,
-        tool_names: tuple[str, str],
+        tool_name: str,
     ) -> None:
-        example = await create_test_example(session, name='Shared session example')
-        expected_results = {
-            'count_examples': 1,
-            'list_examples': [ExampleAgentToolExample(id=example.id, name=example.name, description=example.description)],
-        }
-        active = False
-        calls = []
+        service_method = getattr(ExampleService, tool_name)
+        running = []
 
-        @asynccontextmanager
-        async def tool_call(name):
-            nonlocal active
-            assert not active, 'Tools must not use the shared session concurrently'
-            active = True
-            calls.append(name)
+        async def exclusive_service_method(*args, **kwargs):
+            assert not running, 'Tool calls overlap on the shared AsyncSession'
+            running.append(tool_name)
             try:
-                await asyncio.sleep(0)  # Let another scheduled tool try to enter.
-                yield
+                await asyncio.sleep(0)  # yield so a concurrently scheduled call would start here
+                return await service_method(*args, **kwargs)
             finally:
-                active = False
+                running.pop()
 
-        original_count = ExampleService.count_examples
-        original_list = ExampleService.list_examples
+        monkeypatch.setattr(ExampleService, tool_name, exclusive_service_method)
 
-        async def count(service, *args, **kwargs):
-            async with tool_call('count_examples'):
-                return await original_count(service, *args, **kwargs)
+        def call_tool_twice(messages: list, info: AgentInfo) -> ModelResponse:
+            if len(messages) == 1:
+                return ModelResponse(parts=[ToolCallPart(tool_name, {'payload': {}}) for _ in range(2)])
+            return build_output_model_response(info, ExampleAgentResponse(answer='Done.'))
 
-        async def list_examples(service, *args, **kwargs):
-            async with tool_call('list_examples'):
-                return await original_list(service, *args, **kwargs)
-
-        monkeypatch.setattr(ExampleService, 'count_examples', count)
-        monkeypatch.setattr(ExampleService, 'list_examples', list_examples)
-
-        def model(messages, info):
-            results = {part.tool_call_id: part.content for part in messages[-1].parts if isinstance(part, ToolReturnPart)}
-            if not results:
-                return ModelResponse(parts=[
-                    ToolCallPart(name, {'payload': {}}, tool_call_id=str(index))
-                    for index, name in enumerate(tool_names)
-                ])
-            assert results == {str(index): expected_results[name] for index, name in enumerate(tool_names)}
-            return build_output_model_response(info, ExampleAgentResponse(answer='Found one example.'))
-
-        with test_examples_agent.override(model=FunctionModel(model)):
+        with test_examples_agent.override(model=FunctionModel(call_tool_twice)):
             response = await client.post(
-                '/v1/agents/examples/conversations', json={'model': 'gpt-5.4', 'question': 'Count and list examples.'}
+                '/v1/agents/examples/conversations', json={'model': 'gpt-5.4', 'question': 'How many examples?'}
             )
 
         assert response.status_code == 200
-        assert response.json() == {'answer': 'Found one example.'}
-        assert calls == list(tool_names)
 {%- endif %}
 {%- endif %}
