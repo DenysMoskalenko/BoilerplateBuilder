@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import FastAPI
 
 from app.domains.health_checks.routes import router as health_checks_router
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
@@ -9,18 +9,12 @@ from app.domains.examples_agent.routes import router as examples_agent_router
 {%- endif %}
 
 
-def create_router() -> APIRouter:
-    router = APIRouter()
-    router.include_router(health_checks_router)
-{%- if cookiecutter.project_type != "fastapi_slim" %}
-
-    router_v1 = APIRouter(prefix='/v1')
+# Include into the app directly: every nested APIRouter level keeps another copy of each route and its Depends() tree
+def setup_routers(app: FastAPI) -> None:
+    app.include_router(health_checks_router)
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-    router_v1.include_router(examples_agent_router)
+    app.include_router(examples_agent_router, prefix='/v1')
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    router_v1.include_router(examples_router)
+    app.include_router(examples_router, prefix='/v1')
 {%- endif %}
-    router.include_router(router_v1)
-{%- endif %}
-    return router

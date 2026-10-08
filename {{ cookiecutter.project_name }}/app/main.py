@@ -16,7 +16,7 @@ from app.infrastructure.db.models import load_all_models
 {%- if cookiecutter.use_otel_observability == "yes" %}
 from app.core import observability
 {%- endif %}
-from app.router import create_router
+from app.router import setup_routers
 
 
 def create_app() -> FastAPI:
@@ -37,7 +37,7 @@ def create_app() -> FastAPI:
 {%- if cookiecutter.use_otel_observability == "yes" %}
     observability.setup(app=_app, settings=settings)
 {%- endif %}
-    _app.include_router(create_router())
+    setup_routers(_app)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     add_pagination(_app)
 {%- endif %}
