@@ -51,7 +51,7 @@ All types share: Python 3.11–3.14, uv, Ruff + ty, pytest, Docker, Makefile, pr
 your-project/
 ├── app/
 │   ├── main.py
-│   ├── router.py                      # Aggregates domain routers (create_router)
+│   ├── router.py                      # Includes domain routers into the app (setup_routers)
 │   ├── core/                          # Config, logging, observability, exceptions, schemas
 │   ├── infrastructure/                # Technical adapters
 │   │   ├── db/
