@@ -31,6 +31,24 @@ jobs:
       - name: Run complexity check
         run: uv run complexipy .
 
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      # Fails closed when OSV is unreachable, so it stays out of local runs and the Docker build.
+      UV_MALWARE_CHECK: '1'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: "{{ cookiecutter.python_version }}"
+          enable-cache: true
+      - name: Install locked dependencies and check them for malware
+        run: uv sync --locked
+      - name: Audit dependencies for known vulnerabilities
+        run: uv audit --locked
+
   tests:
     needs: linter
     runs-on: ubuntu-latest

@@ -25,7 +25,7 @@
 ## Testing Guidelines
 - Framework: `pytest`. Layout: `tests/unit/` (unit), `tests/api/` (FastAPI), DB tests use testcontainers.
 - Run locally: `make test` or `pytest -v`; use `make test-coverage` to review coverage.
-- For template changes, validate with `python -m scripts.template_smoke_test` (generates each type, then runs `uv sync` + `make lint`/`typecheck`/`test` inside each); requires `cookiecutter`, `uv`, `make`, and Docker for DB types. At minimum cover the affected project types.
+- For template changes, validate with `python -m scripts.template_smoke_test` (generates each type, then runs `uv sync` + `make lint`/`typecheck`/`test` + `uv audit` inside each); requires `cookiecutter`, uv 0.13.5+, `make`, and Docker for DB types. At minimum cover the affected project types.
 - When working on observability/local telemetry features, template verification must cover every `project_type` combined with the four `use_otel_observability`/`generate_local_otel_stack` answer pairs (yes/yes, yes/no, no/yes which must fail early, no/no) to ensure both positive and negative paths stay healthy.
 
 ## Commit & Pull Request Guidelines

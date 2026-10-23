@@ -22,19 +22,19 @@ dependencies = [
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
     "boto3==1.43.101",
     "boto3-stubs[bedrock-runtime]==1.43.101",
-    "pydantic-ai-slim[openai,bedrock]==2.49.0",
+    "pydantic-ai-slim[openai,bedrock]==2.60.0",
     "pydantic-extra-types==2.11.1",
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
-    "opentelemetry-sdk==1.44.0",
-    "opentelemetry-exporter-otlp==1.44.0",
-    "opentelemetry-instrumentation-logging==0.65b0",
-    "opentelemetry-semantic-conventions==0.65b0",
+    "opentelemetry-sdk==1.45.1",
+    "opentelemetry-exporter-otlp==1.45.1",
+    "opentelemetry-instrumentation-logging==0.66b1",
+    "opentelemetry-semantic-conventions==0.66b1",
     "prometheus-client==0.26.0",
-    "opentelemetry-instrumentation-fastapi==0.65b0",
+    "opentelemetry-instrumentation-fastapi==0.66b1",
     "prometheus-fastapi-instrumentator==8.1.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    "opentelemetry-instrumentation-sqlalchemy==0.65b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.66b1",
 {%- endif %}
 {%- endif %}
 ]
@@ -58,6 +58,7 @@ dev = [
 ]
 
 [tool.uv]
+required-version = ">=0.13.5"
 # Guarantee the lock is installable on Docker/CI platforms even when a dependency
 # publishes a release with an incomplete wheel set (resolver falls back to an older version).
 required-environments = [
@@ -65,6 +66,10 @@ required-environments = [
     "sys_platform == 'linux' and platform_machine == 'aarch64'",
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
+# Wheels only, so no package's build code runs at install time.
+no-build = true
+# Silences the experimental warnings of uv audit and the malware check.
+preview-features = ["audit-command", "malware-check"]
 
 [build-system]
 requires = ["hatchling==1.32.4"]

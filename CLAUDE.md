@@ -36,7 +36,7 @@ Three mechanisms decide what a generated project contains. One feature change us
 2. **Jinja in path names** — files/dirs whose entire name is a conditional, e.g. `{%- if cookiecutter.project_type in ["fastapi_db","fastapi_db_agent"] %}alembic.ini{%- endif %}` and everything under `migrations/`. When the condition is false the name renders empty and the path is skipped.
 3. **Post-gen deletion** — `hooks/post_gen_project.py::remove_empty_files()` deletes whole paths not needed for the chosen type (per-type `paths_to_remove` lists) plus the observability / local-telemetry trees. **If you add, move, or rename files for a given type, update these lists.**
 
-After cookiecutter renders, `hooks/post_gen_project.py` runs this pipeline (order matters): validate observability config → extract-to-current-dir → remove unneeded files → write `.env` from `dist.env` → `uv lock && uv sync` → `ruff format` + `ruff check --fix` → blank out whitespace-only `.py` files → strip leading blank lines → `git init` + initial commit → `prek install` (pre-commit hooks, always installed; targets the just-created repo, or an existing one when `initialize_git=no`, e.g. "Extract Here") → print next steps. Keep this hook idempotent and cross-platform (Python 3.11+).
+After cookiecutter renders, `hooks/post_gen_project.py` runs this pipeline (order matters): validate observability config → validate uv version against `[tool.uv] required-version` → extract-to-current-dir → remove unneeded files → write `.env` from `dist.env` → `uv lock && uv sync` → `ruff format` + `ruff check --fix` → blank out whitespace-only `.py` files → strip leading blank lines → `git init` + initial commit → `prek install` (pre-commit hooks, always installed; targets the just-created repo, or an existing one when `initialize_git=no`, e.g. "Extract Here") → print next steps. Keep this hook idempotent and cross-platform (Python 3.11+).
 
 ## Working on the template
 
@@ -44,7 +44,7 @@ After cookiecutter renders, `hooks/post_gen_project.py` runs this pipeline (orde
 # Generate one type to inspect output (dependencies and hooks are still set up)
 cookiecutter . --no-input project_type=fastapi_db initialize_git=no
 
-# Canonical validation: generate each type, then uv sync + make lint + make typecheck + make test inside each
+# Canonical validation: generate each type, then uv sync + make lint + make typecheck + make test + uv audit inside each
 python -m scripts.template_smoke_test                                  # all types, python 3.14, telemetry + local stack
 python -m scripts.template_smoke_test --project-types fastapi_slim --keep-builds
 python -m scripts.template_smoke_test --use-otel yes --local-otel-stack no

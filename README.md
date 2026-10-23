@@ -4,6 +4,8 @@ Cookiecutter template for production-ready FastAPI applications. Generates a ful
 
 ## Quick Start
 
+Requires uv 0.13.5 or newer.
+
 ```bash
 uv tool run cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 ```
@@ -24,7 +26,7 @@ cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 | **`fastapi_agent`** | FastAPI + AI agent. No database, just an LLM-powered endpoint. |
 | **`fastapi_slim`** | Minimal FastAPI. Health checks, Docker, tests, and default telemetry. |
 
-All types share: Python 3.11–3.14, uv, Ruff + ty, pytest, Docker, Makefile, pre-commit (via prek), and optional GitHub Actions.
+All types share: Python 3.11–3.14, uv, Ruff + ty, pytest, Docker, Makefile, pre-commit (via prek), dependency auditing with `uv audit`, and optional GitHub Actions.
 
 ### What each type adds
 
