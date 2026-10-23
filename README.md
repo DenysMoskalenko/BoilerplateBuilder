@@ -4,6 +4,8 @@ Cookiecutter template for production-ready FastAPI applications. Generates a ful
 
 ## Quick Start
 
+Requires uv 0.13.5 or newer.
+
 ```bash
 uv tool run cookiecutter https://github.com/DenysMoskalenko/BoilerplateBuilder
 ```

@@ -85,6 +85,10 @@ jobs:
         run: |
           uv run --active pytest -v
 
+      - name: Audit dependencies
+        working-directory: ./TestProject
+        run: uv audit --locked
+
   test-template-generation:
     runs-on: ubuntu-latest
     strategy:

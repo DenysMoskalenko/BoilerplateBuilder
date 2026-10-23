@@ -2,9 +2,11 @@
 """Post-generation hook for cookiecutter."""
 
 import os
+import re
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 PROJECT_TYPE = "{{ cookiecutter.project_type }}"
@@ -24,6 +26,31 @@ def validate_observability_config():
         print("   Please regenerate the project with 'use_otel_observability=yes' or 'generate_local_otel_stack=no'.\n")
 
         sys.exit(1)
+
+
+def validate_uv_version():
+    """Fail before touching any files when uv is older than pyproject's [tool.uv] required-version.
+
+    uv older than 0.12 cannot parse the project's [tool.uv] table and silently ignores it,
+    so the generated lock would miss its settings instead of failing.
+    """
+    try:
+        installed = subprocess.run(["uv", "--version"], check=True, capture_output=True, text=True).stdout
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return  # install_dependencies reports a missing uv
+
+    required = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["tool"]["uv"]["required-version"]
+    if _parse_version(installed) < _parse_version(required):
+        print("\n❌ ERROR: uv is too old!")
+        print(f"   This template requires uv {required}, found {installed.strip()}.")
+        print("   Upgrade uv (https://docs.astral.sh/uv/getting-started/installation/#upgrading-uv) and generate again.\n")
+
+        sys.exit(1)
+
+
+def _parse_version(text: str) -> tuple[int, int, int]:
+    major, minor, patch = re.search(r"(\d+)\.(\d+)\.(\d+)", text).groups()
+    return int(major), int(minor), int(patch)
 
 
 def extract_to_current_directory():
@@ -374,6 +401,7 @@ def main():
     print("\n🔧 Running post-generation tasks...")
 
     validate_observability_config()
+    validate_uv_version()
     extract_to_current_directory()
     remove_empty_files()
     create_env_file()

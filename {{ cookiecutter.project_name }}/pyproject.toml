@@ -66,7 +66,7 @@ required-environments = [
     "sys_platform == 'linux' and platform_machine == 'aarch64'",
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
-# Install wheels only, never build source distributions.
+# Wheels only, so no package's build code runs at install time.
 no-build = true
 # Silences the experimental warnings of uv audit and the malware check.
 preview-features = ["audit-command", "malware-check"]
