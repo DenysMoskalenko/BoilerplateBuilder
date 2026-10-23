@@ -4,8 +4,9 @@
 
 ### Run on the host
 
-Requires uv 0.13.5 or newer. Dependencies install from wheels only (`no-build = true`); list a package that ships
-only a source distribution in `no-build-package` under `[tool.uv]`.
+Requires uv 0.13.5 or newer. Dependencies install from wheels only (`no-build = true`), with no per-package
+exemption (`no-build-package` only adds packages to the block list). For a package that ships only a source
+distribution, pick a release that publishes wheels or remove `no-build`.
 
 1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
 2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
