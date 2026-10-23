@@ -4,6 +4,8 @@
 
 ### Run on the host
 
+Requires uv 0.13.5 or newer (`uv self update`).
+
 1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
 2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
 3. Activate environment `source .venv/bin/activate`
@@ -51,7 +53,9 @@ Both it and `make run` bind port 8000: stop one before starting the other (`dock
 Pre-commit hooks are configured in `.pre-commit-config.yaml` and installed
 automatically when the project is generated, using
 [prek](https://github.com/j178/prek) (a drop-in pre-commit runner). Ruff
-(lint + format) and ty run on every commit.
+(lint + format) and ty run on every commit. When `uv.lock`, `pyproject.toml` or
+`uv.toml` changes, `uv audit --locked` reports known vulnerabilities in the
+dependencies without rewriting the lock.
 
 If you cloned the repository fresh -- or generated the project with
 `initialize_git=no` outside a git repository -- re-activate the hooks with
