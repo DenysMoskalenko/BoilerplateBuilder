@@ -17,9 +17,6 @@ jobs:
         with:
           python-version: "{{ cookiecutter.python_version }}"
           enable-cache: true
-      - name: Signal if cache restored
-        if: steps.setup-uv.outputs.cache-hit == 'true'
-        run: echo "Cache was restored"
       - name: Install locked dependencies
         run: uv sync --locked
       - name: Run linter
@@ -60,9 +57,6 @@ jobs:
         with:
           python-version: "{{ cookiecutter.python_version }}"
           enable-cache: true
-      - name: Signal if cache restored
-        if: steps.setup-uv.outputs.cache-hit == 'true'
-        run: echo "Cache was restored"
       - name: Install locked dependencies
         run: uv sync --locked
       - name: Run tests
