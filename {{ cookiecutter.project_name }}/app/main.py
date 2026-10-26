@@ -47,18 +47,14 @@ def create_app() -> FastAPI:
     return _app
 
 
-def run() -> None:
-    settings = get_settings()
+if __name__ == '__main__':
+    _settings = get_settings()
     uvicorn.run(
         'app.main:create_app',
         factory=True,
         host='0.0.0.0',  # noqa: S104
         port=8000,
-        root_path=settings.ROOT_PATH,
-        log_level=settings.LOG_LEVEL.lower(),
-        log_config=build_logging_config(settings.LOG_LEVEL, settings.LOG_FORMAT),
+        root_path=_settings.ROOT_PATH,
+        log_level=_settings.LOG_LEVEL.lower(),
+        log_config=build_logging_config(_settings.LOG_LEVEL, _settings.LOG_FORMAT),
     )
-
-
-if __name__ == '__main__':
-    run()

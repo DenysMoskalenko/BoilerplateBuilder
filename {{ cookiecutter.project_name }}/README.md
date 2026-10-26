@@ -29,12 +29,6 @@ After start, API docs are available at:
 - http://localhost:8000/docs - Interactive Swagger UI
 - http://localhost:8000/redoc - ReDoc documentation
 
-### Run behind a gateway
-
-When a gateway routes a path prefix to this service (for example `/books/*`), configure the gateway to strip
-the prefix and set `ROOT_PATH=/books`. The server passes it to the app as the ASGI `root_path`, so the OpenAPI
-`servers` entry and the `/docs` page point back through the gateway.
-
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
 ### Database migrations
