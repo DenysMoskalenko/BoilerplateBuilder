@@ -4,7 +4,7 @@ import asyncio
 {%- endif %}
 import logging
 
-from botocore.exceptions import ReadTimeoutError
+from botocore.exceptions import NoCredentialsError
 from httpx2 import AsyncClient
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
@@ -55,7 +55,7 @@ class TestCreateExampleAgentResponse:
             (ModelHTTPError(status_code=429, model_name='test'), 429, RATE_LIMITED_DETAIL, logging.WARNING),
             (ModelHTTPError(status_code=401, model_name='test'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
             (ModelAPIError(model_name='test', message='Connection error.'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
-            (ReadTimeoutError(endpoint_url='https://bedrock.test'), 503, UNAVAILABLE_DETAIL, logging.ERROR),
+            (NoCredentialsError(), 503, UNAVAILABLE_DETAIL, logging.ERROR),
             (
                 UsageLimitExceeded('The next request would exceed the request_limit of 5'),
                 503,
@@ -63,7 +63,7 @@ class TestCreateExampleAgentResponse:
                 logging.WARNING,
             ),
         ],
-        ids=['http_429', 'http_401', 'api_error', 'botocore_read_timeout', 'usage_limit_exceeded'],
+        ids=['http_429', 'http_401', 'api_error', 'botocore_no_credentials', 'usage_limit_exceeded'],
     )
     async def test_provider_error_mapping(
         self,
