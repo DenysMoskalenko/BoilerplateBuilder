@@ -32,7 +32,6 @@ def create_app() -> FastAPI:
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
         lifespan=lifespan,
 {%- endif %}
-        root_path=settings.ROOT_PATH,
     )
 {%- if cookiecutter.use_otel_observability == "yes" %}
     observability.setup(app=_app, settings=settings)
@@ -55,6 +54,7 @@ if __name__ == '__main__':
         factory=True,
         host='0.0.0.0',  # noqa: S104
         port=8000,
+        root_path=_settings.ROOT_PATH,
         log_level=_settings.LOG_LEVEL.lower(),
         log_config=build_logging_config(_settings.LOG_LEVEL, _settings.LOG_FORMAT),
     )

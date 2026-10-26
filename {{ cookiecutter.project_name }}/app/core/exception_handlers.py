@@ -28,7 +28,7 @@ def include_exception_handlers(app: FastAPI) -> None:
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
     app.add_exception_handler(ModelHTTPError, cast(ExceptionHandler, model_http_error_exception_handler))
     app.add_exception_handler(ModelAPIError, cast(ExceptionHandler, ai_provider_unavailable_exception_handler))
-    # Bedrock wraps only ClientError; BotoCoreError (timeouts, connection errors) reaches the app unwrapped
+    # Bedrock wraps ClientError, timeouts and connection errors; any other BotoCoreError reaches the app unwrapped
     app.add_exception_handler(BotoCoreError, cast(ExceptionHandler, ai_provider_unavailable_exception_handler))
     app.add_exception_handler(UsageLimitExceeded, cast(ExceptionHandler, usage_limit_exceeded_exception_handler))
 {%- endif %}

@@ -12,7 +12,6 @@ class AppSettings:
     PROJECT_VERSION: str = '1.2.3'
     LOG_LEVEL: str = 'DEBUG'
     LOG_FORMAT: LogFormatType = LogFormatType.JSON
-    ROOT_PATH: str = ''
 
 
 def test_create_app_configures_logging_from_settings(monkeypatch: MonkeyPatch) -> None:

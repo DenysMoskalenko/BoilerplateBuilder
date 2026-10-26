@@ -9,20 +9,20 @@ readme = "README.md"
 requires-python = ">={{ cookiecutter.python_version }}"
 
 dependencies = [
-    "fastapi==0.141.1",
-    "pydantic-settings==2.15.0",
-    "pydantic==2.13.5",
-    "uvicorn[standard]==0.53.0",
+    "fastapi==0.162.0",
+    "pydantic-settings==2.16.1",
+    "pydantic==2.14.1",
+    "uvicorn[standard]==0.54.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    "alembic==1.20.0",
-    "fastapi-pagination==0.16.0",
+    "alembic==1.20.1",
+    "fastapi-pagination==0.16.1",
     "psycopg[binary]==3.3.6",
-    "sqlalchemy[asyncio]==2.0.54",
+    "sqlalchemy[asyncio]==2.0.55",
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-    "boto3==1.43.101",
-    "boto3-stubs[bedrock-runtime]==1.43.101",
-    "pydantic-ai-slim[openai,bedrock]==2.60.0",
+    "boto3==1.43.118",
+    "boto3-stubs[bedrock-runtime]==1.43.118",
+    "pydantic-ai-slim[openai,bedrock]==2.61.0",
     "pydantic-extra-types==2.11.1",
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
@@ -41,14 +41,14 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff==0.16.8",
-    "ty==0.0.83",
-    "prek==0.5.3",
-    "complexipy==8.0.1",
-    "httpx2==2.13.1",
-    "polyfactory==3.3.0",
+    "ruff==0.17.2",
+    "ty==0.0.92",
+    "prek==0.5.7",
+    "complexipy==8.2.0",
+    "httpx2==2.16.0",
+    "polyfactory==3.5.0",
     "pytest==9.1.1",
-    "pytest-asyncio==1.4.0",
+    "pytest-asyncio==1.4.1",
     "pytest-cov==7.1.0",
     "pytest-html==4.2.0",
     "freezegun==1.5.5",
