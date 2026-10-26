@@ -32,3 +32,16 @@ def test_create_app_configures_logging_from_settings(monkeypatch: MonkeyPatch) -
     app_main.create_app()
 
     assert calls == [(settings.LOG_LEVEL, settings.LOG_FORMAT)]
+
+
+def test_run_passes_root_path_to_the_server(monkeypatch: MonkeyPatch) -> None:
+    """The server owns the root path that a gateway strips; FastAPI(root_path=...) is deprecated."""
+    settings = AppSettings(ROOT_PATH='/svc')
+    root_paths: list[str] = []
+
+    monkeypatch.setattr(app_main, 'get_settings', lambda: settings)
+    monkeypatch.setattr(app_main.uvicorn, 'run', lambda *args, root_path, **kwargs: root_paths.append(root_path))
+
+    app_main.run()
+
+    assert root_paths == ['/svc']

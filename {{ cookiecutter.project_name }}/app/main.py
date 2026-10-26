@@ -32,7 +32,6 @@ def create_app() -> FastAPI:
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
         lifespan=lifespan,
 {%- endif %}
-        root_path=settings.ROOT_PATH,
     )
 {%- if cookiecutter.use_otel_observability == "yes" %}
     observability.setup(app=_app, settings=settings)
@@ -48,13 +47,18 @@ def create_app() -> FastAPI:
     return _app
 
 
-if __name__ == '__main__':
-    _settings = get_settings()
+def run() -> None:
+    settings = get_settings()
     uvicorn.run(
         'app.main:create_app',
         factory=True,
         host='0.0.0.0',  # noqa: S104
         port=8000,
-        log_level=_settings.LOG_LEVEL.lower(),
-        log_config=build_logging_config(_settings.LOG_LEVEL, _settings.LOG_FORMAT),
+        root_path=settings.ROOT_PATH,
+        log_level=settings.LOG_LEVEL.lower(),
+        log_config=build_logging_config(settings.LOG_LEVEL, settings.LOG_FORMAT),
     )
+
+
+if __name__ == '__main__':
+    run()
