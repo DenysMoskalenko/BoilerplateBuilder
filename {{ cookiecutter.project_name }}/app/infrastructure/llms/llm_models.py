@@ -23,20 +23,20 @@ def get_llm_models_registry(
 ) -> ModelRegistry:
     registry: ModelRegistry = {
         AIModelName.HAIKU_4_5: BedrockConverseModel(
-            provider=bedrock_provider, model_name=settings.BEDROCK_MODEL_HAIKU_4_5
+            provider=bedrock_provider, model_name=settings.BEDROCK.model_haiku_4_5
         ),
         AIModelName.SONNET_4_6: BedrockConverseModel(
-            provider=bedrock_provider, model_name=settings.BEDROCK_MODEL_SONNET_4_6
+            provider=bedrock_provider, model_name=settings.BEDROCK.model_sonnet_4_6
         ),
         AIModelName.OPUS_4_6: BedrockConverseModel(
-            provider=bedrock_provider, model_name=settings.BEDROCK_MODEL_OPUS_4_6
+            provider=bedrock_provider, model_name=settings.BEDROCK.model_opus_4_6
         ),
-        AIModelName.GPT_5_1: OpenAIChatModel(provider=openai_provider, model_name=settings.OPENAI_GPT_5_1_MODEL_NAME),
-        AIModelName.GPT_5_2: OpenAIChatModel(provider=openai_provider, model_name=settings.OPENAI_GPT_5_2_MODEL_NAME),
+        AIModelName.GPT_5_1: OpenAIChatModel(provider=openai_provider, model_name=settings.OPENAI.gpt_5_1_model_name),
+        AIModelName.GPT_5_2: OpenAIChatModel(provider=openai_provider, model_name=settings.OPENAI.gpt_5_2_model_name),
         AIModelName.GPT_5_4_MINI: OpenAIChatModel(
-            provider=openai_provider, model_name=settings.OPENAI_GPT_5_4_MINI_MODEL_NAME
+            provider=openai_provider, model_name=settings.OPENAI.gpt_5_4_mini_model_name
         ),
-        AIModelName.GPT_5_4: OpenAIChatModel(provider=openai_provider, model_name=settings.OPENAI_GPT_5_4_MODEL_NAME),
+        AIModelName.GPT_5_4: OpenAIChatModel(provider=openai_provider, model_name=settings.OPENAI.gpt_5_4_model_name),
     }
     return registry
 {%- endif %}

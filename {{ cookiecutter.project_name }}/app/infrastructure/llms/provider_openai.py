@@ -12,9 +12,9 @@ from app.core.config import get_settings, Settings
 @lru_cache
 def get_openai_client(settings: Annotated[Settings, Depends(get_settings)]) -> AsyncOpenAI:
     return AsyncOpenAI(
-        api_key=settings.OPENAI_API_KEY.get_secret_value(),
-        timeout=settings.OPENAI_TIMEOUT,
-        base_url=settings.OPENAI_BASE_URL or None,
+        api_key=settings.OPENAI.api_key.get_secret_value(),
+        timeout=settings.OPENAI.timeout_seconds,
+        base_url=settings.OPENAI.base_url or None,
     )
 
 

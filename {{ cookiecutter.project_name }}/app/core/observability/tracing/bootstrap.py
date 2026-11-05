@@ -36,7 +36,7 @@ def create_resource(settings: Settings) -> Resource:
 
 
 def setup(app: FastAPI, settings: Settings) -> None:
-    endpoint = settings.OBSERVABILITY_TRACING_OTLP_ENDPOINT
+    endpoint = settings.OBSERVABILITY.tracing_otlp_endpoint
     if endpoint is None:
         raise ValueError('OBSERVABILITY_TRACING_OTLP_ENDPOINT is required when tracing is enabled')
     endpoint_url = endpoint.encoded_string()
@@ -46,7 +46,7 @@ def setup(app: FastAPI, settings: Settings) -> None:
     SQLAlchemyInstrumentor().instrument()
 {%- endif %}
 
-    sampler = TraceIdRatioBased(settings.OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT / 100)
+    sampler = TraceIdRatioBased(settings.OBSERVABILITY.tracing_sample_rate_percent / 100)
     provider = TracerProvider(resource=create_resource(settings=settings), sampler=sampler)
     span_exporter = OTLPSpanExporter(endpoint=endpoint_url, insecure=endpoint.scheme not in ('https', 'grpcs'))
     span_processor = BatchSpanProcessor(span_exporter=span_exporter)

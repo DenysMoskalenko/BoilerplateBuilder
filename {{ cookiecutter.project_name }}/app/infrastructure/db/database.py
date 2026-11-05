@@ -4,7 +4,6 @@ from functools import lru_cache
 from typing import Any, AsyncGenerator, AsyncIterable
 
 from alembic.config import Config
-from pydantic import PostgresDsn
 from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -27,10 +26,14 @@ class Base(DeclarativeBase):
 
 @lru_cache
 def async_engine() -> AsyncEngine:
-    settings = get_settings()
+    database = get_settings().DATABASE
     return create_async_engine(
-        settings.DATABASE_URL.unicode_string(),
+        database.url.unicode_string(),
         pool_pre_ping=True,
+        connect_args={
+            'connect_timeout': database.connect_timeout_seconds,
+            'options': f'-c statement_timeout={database.statement_timeout_seconds}s',
+        },
     )
 
 
@@ -70,12 +73,8 @@ async def open_db_session() -> AsyncGenerator[AsyncSession, Any]:
         await session.close()
 
 
-def get_alembic_config(database_url: PostgresDsn, script_location: str = 'migrations') -> Config:
+def get_alembic_config(script_location: str = 'migrations') -> Config:
     alembic_config = Config()
     alembic_config.set_main_option('script_location', script_location)
-    alembic_config.set_main_option(
-        'sqlalchemy.url',
-        database_url.unicode_string().replace('postgresql+psycopg', 'postgresql'),
-    )
     return alembic_config
 {%- endif %}

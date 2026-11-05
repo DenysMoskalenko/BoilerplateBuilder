@@ -13,22 +13,20 @@ from tests.unit.core.observability.mocks import SpanExporterSpy, TracingBootstra
 
 
 class SettingsOverrides(TypedDict, total=False):
-    PROJECT_NAME: str
-    PROJECT_VERSION: str
-    OBSERVABILITY_TRACING_ENABLED: bool
-    OBSERVABILITY_METRICS_ENABLED: bool
-    OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT: float
-    OBSERVABILITY_TRACING_OTLP_ENDPOINT: str | None
+    tracing_enabled: bool
+    metrics_enabled: bool
+    tracing_sample_rate_percent: float
+    tracing_otlp_endpoint: str | None
 
 
 def build_settings(**overrides: Unpack[SettingsOverrides]) -> Settings:
     data = get_settings().model_dump()
-    data.update(overrides)
+    data['OBSERVABILITY'].update(overrides)
     return Settings.model_validate(data)
 
 
 def setup_tracing(monkeypatch: MonkeyPatch, **overrides: Unpack[SettingsOverrides]) -> TracingBootstrapSpy:
-    settings_overrides: SettingsOverrides = {'OBSERVABILITY_TRACING_OTLP_ENDPOINT': 'http://localhost:4317'}
+    settings_overrides: SettingsOverrides = {'tracing_otlp_endpoint': 'http://localhost:4317'}
     settings_overrides.update(overrides)
     settings = build_settings(**settings_overrides)
     spy = TracingBootstrapSpy()
@@ -41,7 +39,7 @@ def setup_tracing(monkeypatch: MonkeyPatch, **overrides: Unpack[SettingsOverride
 
 def test_create_resource_sets_service_name() -> None:
     """Trace resources carry the configured service name."""
-    settings = build_settings(PROJECT_NAME='svc')
+    settings = get_settings().model_copy(update={'PROJECT_NAME': 'svc'})
 
     resource = tracing_bootstrap.create_resource(settings=settings)
 
@@ -50,7 +48,7 @@ def test_create_resource_sets_service_name() -> None:
 
 def test_create_resource_sets_service_version() -> None:
     """Trace resources carry the configured service version."""
-    settings = build_settings(PROJECT_VERSION='1.2.3')
+    settings = get_settings().model_copy(update={'PROJECT_VERSION': '1.2.3'})
 
     resource = tracing_bootstrap.create_resource(settings=settings)
 
@@ -80,35 +78,35 @@ def test_setup_excludes_noise_endpoints_from_fastapi_spans(monkeypatch: MonkeyPa
 
 def test_setup_converts_sampling_percent_to_ratio(monkeypatch: MonkeyPatch) -> None:
     """Tracing setup converts percentage sampling config to OpenTelemetry ratio."""
-    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=25.0)
+    spy = setup_tracing(monkeypatch, tracing_sample_rate_percent=25.0)
 
     assert spy.sampler is not None and spy.sampler.ratio == 0.25
 
 
 def test_setup_uses_secure_exporter_for_https_endpoint(monkeypatch: MonkeyPatch) -> None:
     """Tracing setup keeps the OTLP exporter secure for HTTPS endpoints."""
-    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT='https://collector.internal:4317')
+    spy = setup_tracing(monkeypatch, tracing_otlp_endpoint='https://collector.internal:4317')
 
     assert spy.span_exporter == SpanExporterSpy(endpoint='https://collector.internal:4317/', insecure=False)
 
 
 def test_setup_uses_insecure_exporter_for_http_endpoint(monkeypatch: MonkeyPatch) -> None:
     """Tracing setup allows insecure OTLP export for HTTP endpoints."""
-    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT='http://collector.internal:4317')
+    spy = setup_tracing(monkeypatch, tracing_otlp_endpoint='http://collector.internal:4317')
 
     assert spy.span_exporter == SpanExporterSpy(endpoint='http://collector.internal:4317/', insecure=True)
 
 
 def test_setup_uses_insecure_exporter_for_grpc_endpoint(monkeypatch: MonkeyPatch) -> None:
     """Tracing setup allows insecure OTLP export for plaintext gRPC endpoints."""
-    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT='grpc://collector.internal:4317')
+    spy = setup_tracing(monkeypatch, tracing_otlp_endpoint='grpc://collector.internal:4317')
 
     assert spy.span_exporter == SpanExporterSpy(endpoint='grpc://collector.internal:4317', insecure=True)
 
 
 def test_setup_uses_secure_exporter_for_grpcs_endpoint(monkeypatch: MonkeyPatch) -> None:
     """Tracing setup keeps the OTLP exporter secure for TLS gRPC endpoints."""
-    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT='grpcs://collector.internal:4317')
+    spy = setup_tracing(monkeypatch, tracing_otlp_endpoint='grpcs://collector.internal:4317')
 
     assert spy.span_exporter == SpanExporterSpy(endpoint='grpcs://collector.internal:4317', insecure=False)
 
@@ -116,7 +114,7 @@ def test_setup_uses_secure_exporter_for_grpcs_endpoint(monkeypatch: MonkeyPatch)
 @pytest.mark.parametrize('endpoint', ['grpc://collector.internal:4317', 'grpcs://collector.internal:4317'])
 def test_setup_hands_the_exporter_a_usable_grpc_channel_target(monkeypatch: MonkeyPatch, endpoint: str) -> None:
     """The endpoint built for gRPC collectors resolves to a channel target in a real OTLP exporter."""
-    spy = setup_tracing(monkeypatch, OBSERVABILITY_TRACING_OTLP_ENDPOINT=endpoint)
+    spy = setup_tracing(monkeypatch, tracing_otlp_endpoint=endpoint)
     assert spy.span_exporter is not None
 
     exporter = OTLPSpanExporter(endpoint=spy.span_exporter.endpoint, insecure=spy.span_exporter.insecure)
@@ -146,7 +144,7 @@ def test_setup_requires_endpoint(monkeypatch: MonkeyPatch) -> None:
     """Tracing setup fails loudly when validation was bypassed and endpoint is missing."""
     spy = TracingBootstrapSpy()
     spy.install(monkeypatch)
-    settings = get_settings().model_copy(update={'OBSERVABILITY_TRACING_OTLP_ENDPOINT': None})
+    settings = build_settings(tracing_otlp_endpoint=None)
 
     with pytest.raises(ValueError, match='OBSERVABILITY_TRACING_OTLP_ENDPOINT is required'):
         tracing_bootstrap.setup(app=FastAPI(), settings=settings)

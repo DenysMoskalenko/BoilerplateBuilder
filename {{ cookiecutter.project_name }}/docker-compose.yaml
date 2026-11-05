@@ -12,7 +12,11 @@ services:
       - OBSERVABILITY_METRICS_ENABLED=True
       - OBSERVABILITY_TRACING_SAMPLE_RATE_PERCENT=100
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-      - DATABASE_URL=postgresql+psycopg://{{ cookiecutter.project_name.lower() }}_user:{{ cookiecutter.project_name.lower() }}_password@{{ cookiecutter.project_name.lower() }}-db:5432/{{ cookiecutter.project_name.lower() }}_db
+      - DATABASE_HOST={{ cookiecutter.project_name.lower() }}-db
+      - DATABASE_PORT=5432
+      - DATABASE_USER={{ cookiecutter.project_name.lower() }}_user
+      - DATABASE_PASSWORD={{ cookiecutter.project_name.lower() }}_password
+      - DATABASE_NAME={{ cookiecutter.project_name.lower() }}_db
       - MIGRATION_ON_STARTUP=True
 {%- endif %}
     ports:

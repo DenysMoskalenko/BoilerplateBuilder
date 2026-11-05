@@ -1,10 +1,10 @@
 from logging.config import fileConfig
-import os
 from typing import cast
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from app.core.config import DatabaseSettings
 from app.infrastructure.db.database import Base
 from app.infrastructure.db.models import load_all_models
 
@@ -19,8 +19,8 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    database_url = os.getenv('DATABASE_URL', config.get_main_option('sqlalchemy.url'))
-    return cast(str, database_url)
+    # Not `get_settings()`: a migration job must not need every integration's secrets.
+    return DatabaseSettings().url.unicode_string()  # type: ignore[ty:missing-argument]
 
 
 def run_migrations_offline() -> None:

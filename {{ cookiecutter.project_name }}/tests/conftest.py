@@ -112,13 +112,11 @@ async def session(app: FastAPI, _engine: AsyncEngine) -> AsyncIterable[AsyncSess
 
 @pytest.fixture(scope='session')
 async def _engine(_postgres_container: PostgresContainer) -> AsyncIterable[AsyncEngine]:
-    settings = get_settings()
-
     from app.infrastructure.db.database import get_alembic_config
 
-    alembic_config = get_alembic_config(settings.DATABASE_URL, script_location=find_migrations_script_location())
+    alembic_config = get_alembic_config(script_location=find_migrations_script_location())
 
-    engine = create_async_engine(settings.DATABASE_URL.unicode_string())
+    engine = create_async_engine(get_settings().DATABASE.url.unicode_string())
     async with engine.begin() as connection:
         await connection.run_sync(lambda conn: downgrade(alembic_config, 'base'))
         await connection.run_sync(lambda conn: upgrade(alembic_config, 'head'))
@@ -136,14 +134,14 @@ def _postgres_container() -> Generator[PostgresContainer, Any, None]:
     with PostgresContainer(
         image='postgres:18-alpine',
         username='test_boilerplate',
-        password='test_boilerplate',  # noqa: S106
+        password='test@boiler%plate/pw',  # noqa: S106
         dbname='TestBoilerPlate',
     ) as postgres:
-        host = postgres.get_container_host_ip()
-        port = postgres.get_exposed_port(5432)
-        os.environ['DATABASE_URL'] = (
-            f'postgresql+psycopg://{postgres.username}:{postgres.password}@{host}:{port}/{postgres.dbname}'
-        )
+        os.environ['DATABASE_HOST'] = postgres.get_container_host_ip()
+        os.environ['DATABASE_PORT'] = str(postgres.get_exposed_port(5432))
+        os.environ['DATABASE_USER'] = postgres.username
+        os.environ['DATABASE_PASSWORD'] = postgres.password
+        os.environ['DATABASE_NAME'] = postgres.dbname
 
         from app.core.config import get_settings
         from app.infrastructure.db.database import async_engine, async_session_factory
