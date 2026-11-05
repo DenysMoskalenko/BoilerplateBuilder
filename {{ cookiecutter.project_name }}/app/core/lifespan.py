@@ -20,7 +20,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
 
 async def startup(settings: Settings) -> None:
     if settings.MIGRATION_ON_STARTUP:
-        alembic_config = get_alembic_config(settings.DATABASE_URL)
+        alembic_config = get_alembic_config()
         await asyncio.to_thread(upgrade, alembic_config, 'head')
 
 

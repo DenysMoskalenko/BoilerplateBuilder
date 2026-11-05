@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 def setup(app: FastAPI, settings: Settings) -> None:
     logger.info('Setting up observability...')
 
-    if settings.OBSERVABILITY_TRACING_ENABLED:
+    if settings.OBSERVABILITY.tracing_enabled:
         tracing.setup(app=app, settings=settings)
 
-    if settings.OBSERVABILITY_METRICS_ENABLED:
+    if settings.OBSERVABILITY.metrics_enabled:
         metrics.setup(app=app)
 
     logger.info('Observability setup completed.')

@@ -15,16 +15,16 @@ from app.core.config import get_settings, Settings
 def get_bedrock_client(settings: Annotated[Settings, Depends(get_settings)]) -> BedrockRuntimeClient:
     return boto3.client(
         'bedrock-runtime',
-        region_name=settings.AWS_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID.get_secret_value() if settings.AWS_ACCESS_KEY_ID else None,
+        region_name=settings.AWS.region,
+        aws_access_key_id=settings.AWS.access_key_id.get_secret_value() if settings.AWS.access_key_id else None,
         aws_secret_access_key=(
-            settings.AWS_SECRET_ACCESS_KEY.get_secret_value() if settings.AWS_SECRET_ACCESS_KEY else None
+            settings.AWS.secret_access_key.get_secret_value() if settings.AWS.secret_access_key else None
         ),
-        aws_session_token=settings.AWS_SESSION_TOKEN.get_secret_value() if settings.AWS_SESSION_TOKEN else None,
+        aws_session_token=settings.AWS.session_token.get_secret_value() if settings.AWS.session_token else None,
         config=Config(
-            connect_timeout=settings.BEDROCK_CONNECT_TIMEOUT,
-            read_timeout=settings.BEDROCK_READ_TIMEOUT,
-            max_pool_connections=settings.BEDROCK_CONNECTIONS_POOL_SIZE,
+            connect_timeout=settings.BEDROCK.connect_timeout_seconds,
+            read_timeout=settings.BEDROCK.read_timeout_seconds,
+            max_pool_connections=settings.BEDROCK.connections_pool_size,
         ),
     )
 

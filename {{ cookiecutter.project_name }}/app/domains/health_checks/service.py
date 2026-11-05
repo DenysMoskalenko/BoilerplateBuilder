@@ -24,9 +24,10 @@ _logger = logging.getLogger(__name__)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
 
-async def check_database_status(session: AsyncSession) -> LivenessStatus:
+async def check_database_status(session: AsyncSession, timeout_seconds: float) -> LivenessStatus:
     try:
-        await session.execute(text('SELECT 1'))
+        async with asyncio.timeout(timeout_seconds):
+            await session.execute(text('SELECT 1'))
         return 'UP'
     except Exception as exc:
         _logger.error('Database readiness check failed', exc_info=exc)

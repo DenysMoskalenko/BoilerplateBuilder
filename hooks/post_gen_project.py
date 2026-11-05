@@ -138,6 +138,7 @@ def remove_empty_files():
             "tests/api/test_agents.py",
             "tests/factories.py",
             "tests/mocks",
+            "tests/unit/test_database.py",
         ]
         for p in paths_to_remove:
             _remove_path(project_root, p)
@@ -164,6 +165,7 @@ def remove_empty_files():
             "alembic.ini",
             "tests/api/test_examples.py",
             "tests/factories.py",
+            "tests/unit/test_database.py",
         ]
         for p in paths_to_remove:
             _remove_path(project_root, p)
@@ -353,7 +355,7 @@ def display_success_message():
     if IS_DB:
         print("   2. Set up your database:")
         print("      - Run: make up-dependencies  # Start PostgreSQL container")
-        print("      - Or ensure PostgreSQL is running locally and update DATABASE_URL in .env")
+        print("      - Or ensure PostgreSQL is running locally and update DATABASE_* in .env")
         print("      - Run: uv run alembic upgrade head  # Apply migrations")
 
     if IS_AGENT:

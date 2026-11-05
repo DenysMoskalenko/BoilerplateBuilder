@@ -63,7 +63,7 @@ async def health_check_readiness(
     session: Annotated[AsyncSession, Depends(get_session, scope='function')],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> HealthCheckReadyResponse:
-    db_status = await check_database_status(session)
+    db_status = await check_database_status(session, settings.DATABASE.readiness_timeout_seconds)
 
     ready_response = HealthCheckReadyResponse(
         version=settings.PROJECT_VERSION,
@@ -83,7 +83,7 @@ async def health_check_readiness(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> HealthCheckReadyResponse:
     bedrock_status, openai_status = await asyncio.gather(
-        check_bedrock_status(bedrock_client, settings.BEDROCK_MODEL_HAIKU_4_5),
+        check_bedrock_status(bedrock_client, settings.BEDROCK.model_haiku_4_5),
         check_openai_status(openai_client),
     )
 
@@ -106,8 +106,8 @@ async def health_check_readiness(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> HealthCheckReadyResponse:
     db_status, bedrock_status, openai_status = await asyncio.gather(
-        check_database_status(session),
-        check_bedrock_status(bedrock_client, settings.BEDROCK_MODEL_HAIKU_4_5),
+        check_database_status(session, settings.DATABASE.readiness_timeout_seconds),
+        check_bedrock_status(bedrock_client, settings.BEDROCK.model_haiku_4_5),
         check_openai_status(openai_client),
     )
 

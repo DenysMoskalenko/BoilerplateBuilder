@@ -10,14 +10,14 @@ from tests.unit.core.observability.mocks import ObservabilitySetupSpy
 
 
 class SettingsOverrides(TypedDict, total=False):
-    OBSERVABILITY_TRACING_ENABLED: bool
-    OBSERVABILITY_METRICS_ENABLED: bool
-    OBSERVABILITY_TRACING_OTLP_ENDPOINT: str | None
+    tracing_enabled: bool
+    metrics_enabled: bool
+    tracing_otlp_endpoint: str | None
 
 
 def build_settings(**overrides: Unpack[SettingsOverrides]) -> Settings:
     data = get_settings().model_dump()
-    data.update(overrides)
+    data['OBSERVABILITY'].update(overrides)
     return Settings.model_validate(data)
 
 
@@ -25,8 +25,8 @@ def test_setup_configures_tracing_when_tracing_is_enabled(monkeypatch: MonkeyPat
     """Observability bootstrap starts tracing only when tracing is enabled."""
     app = FastAPI()
     settings = build_settings(
-        OBSERVABILITY_TRACING_ENABLED=True,
-        OBSERVABILITY_TRACING_OTLP_ENDPOINT='http://localhost:4317',
+        tracing_enabled=True,
+        tracing_otlp_endpoint='http://localhost:4317',
     )
     spy = ObservabilitySetupSpy()
     spy.install(monkeypatch)
@@ -39,7 +39,7 @@ def test_setup_configures_tracing_when_tracing_is_enabled(monkeypatch: MonkeyPat
 def test_setup_configures_metrics_when_metrics_are_enabled(monkeypatch: MonkeyPatch) -> None:
     """Observability bootstrap starts metrics only when metrics are enabled."""
     app = FastAPI()
-    settings = build_settings(OBSERVABILITY_METRICS_ENABLED=True)
+    settings = build_settings(metrics_enabled=True)
     spy = ObservabilitySetupSpy()
     spy.install(monkeypatch)
 
@@ -51,7 +51,7 @@ def test_setup_configures_metrics_when_metrics_are_enabled(monkeypatch: MonkeyPa
 def test_setup_skips_tracing_when_tracing_is_disabled(monkeypatch: MonkeyPatch) -> None:
     """Observability bootstrap does not start tracing when tracing is disabled."""
     app = FastAPI()
-    settings = build_settings(OBSERVABILITY_TRACING_ENABLED=False)
+    settings = build_settings(tracing_enabled=False)
     spy = ObservabilitySetupSpy()
     spy.install(monkeypatch)
 
@@ -63,7 +63,7 @@ def test_setup_skips_tracing_when_tracing_is_disabled(monkeypatch: MonkeyPatch) 
 def test_setup_skips_metrics_when_metrics_are_disabled(monkeypatch: MonkeyPatch) -> None:
     """Observability bootstrap does not start metrics when metrics are disabled."""
     app = FastAPI()
-    settings = build_settings(OBSERVABILITY_METRICS_ENABLED=False)
+    settings = build_settings(metrics_enabled=False)
     spy = ObservabilitySetupSpy()
     spy.install(monkeypatch)
 
