@@ -1,11 +1,7 @@
-from functools import lru_cache
-from importlib.metadata import version
 {% set is_agent = cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
 {% set is_db = cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] -%}
-{% if is_db -%}
-from ipaddress import ip_address
-import re
-{% endif -%}
+from functools import {% if is_db %}cached_property, {% endif %}lru_cache
+from importlib.metadata import version
 {% if is_agent and cookiecutter.use_otel_observability == "yes" -%}
 from typing import Annotated, Literal, Self
 {% elif is_agent -%}
@@ -18,7 +14,7 @@ from urllib.parse import quote
 {% endif -%}
 {%- if is_db %}
 
-from pydantic import field_validator, PostgresDsn
+from pydantic import PostgresDsn, ValidationError
 {%- endif %}
 {%- if is_db or is_agent %}
 
@@ -46,55 +42,30 @@ class _EnvSettings(BaseSettings):
 
 
 {% if is_db -%}
-# Non-ASCII is excluded on purpose: `PostgresDsn.build` percent-encodes it and libpq then resolves it literally.
-_BARE_SEGMENT = re.compile(r'[A-Za-z0-9._-]+')
-
-
-def _is_bare_segment(value: str) -> bool:
-    """URLs spell IPv6 as `[addr]`, so brackets are the one place a colon may appear."""
-    if value.startswith('[') and value.endswith(']'):
-        try:
-            return '%' not in value and ip_address(value[1:-1]).version == 6
-        except ValueError:
-            return False
-    return _BARE_SEGMENT.fullmatch(value) is not None
-
-
 class DatabaseSettings(_EnvSettings):
     model_config = SettingsConfigDict(env_prefix='DATABASE_')
 
-    # No default: a pod missing it must fail at startup, not boot against itself.
     host: str
     port: int = Field(default=5432, ge=1, le=65535)
     user: str
     password: SecretStr
     name: str
-    # Without both, a blackholed host leaves `/health/ready` on kernel TCP retries instead of answering 503.
-    # A dead pooled connection adds up to 10s: psycopg finishes its own cancel before raising.
     connect_timeout_seconds: int = Field(default=5, ge=1)
     readiness_timeout_seconds: float = Field(default=5.0, gt=0)
-    # Server-side, on every statement: nothing else bounds a query that hangs after the connection is up.
-    statement_timeout_seconds: int = Field(default=10, ge=1)
 
-    @property
+    @cached_property
     def url(self) -> PostgresDsn:
-        """`build` leaves `@`, `/`, `:` and `%` in a credential raw, where they read as URL structure."""
-        return PostgresDsn.build(
-            scheme='postgresql+psycopg',  # psycopg2, which a bare `postgresql://` selects, is not installed.
-            username=quote(self.user, safe=''),
-            password=quote(self.password.get_secret_value(), safe=''),
-            host=self.host,
-            port=self.port,
-            path=self.name,
-        )
-
-    @field_validator('host', 'name')
-    @classmethod
-    def validate_bare_segment(cls, value: str) -> str:
-        """Neither is quoted, so `h@other` or `db?sslmode=disable` would compose a URL that means something else."""
-        if not _is_bare_segment(value):
-            raise ValueError('must be letters, digits, ".", "_" or "-" only, or a bracketed IPv6 literal')
-        return value
+        try:
+            return PostgresDsn.build(
+                scheme='postgresql+psycopg',
+                username=quote(self.user, safe=''),
+                password=quote(self.password.get_secret_value(), safe=''),
+                host=self.host,
+                port=self.port,
+                path=self.name,
+            )
+        except ValidationError:  # its message prints the whole URL, password included
+            raise ValueError('DATABASE_HOST is not a valid URL host') from None
 
 
 {% endif -%}

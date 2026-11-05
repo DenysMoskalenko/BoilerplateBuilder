@@ -30,10 +30,7 @@ def async_engine() -> AsyncEngine:
     return create_async_engine(
         database.url.unicode_string(),
         pool_pre_ping=True,
-        connect_args={
-            'connect_timeout': database.connect_timeout_seconds,
-            'options': f'-c statement_timeout={database.statement_timeout_seconds}s',
-        },
+        connect_args={'connect_timeout': database.connect_timeout_seconds},
     )
 
 
