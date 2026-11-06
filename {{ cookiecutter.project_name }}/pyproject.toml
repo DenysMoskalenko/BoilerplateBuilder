@@ -68,6 +68,8 @@ required-environments = [
 ]
 # Wheels only, so no package's build code runs at install time.
 no-build = true
+# Ignores releases younger than this, so a hijacked upload gets pulled before it reaches uv.lock.
+exclude-newer = "5 days"
 # Silences the experimental warnings of uv audit and the malware check.
 preview-features = ["audit-command", "malware-check"]
 
