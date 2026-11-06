@@ -8,6 +8,9 @@ Requires uv 0.13.5 or newer. Dependencies install from wheels only (`no-build = 
 exemption (`no-build-package` only adds packages to the block list). For a package that ships only a source
 distribution, pick a release that publishes wheels or remove `no-build`.
 
+Resolution ignores releases younger than 5 days (`exclude-newer`). To take a newer release, such as a security fix,
+set `<package> = false` under `[tool.uv.exclude-newer-package]` and remove the entry once the release is 5 days old.
+
 1. (Optional) Install required {{ cookiecutter.python_version }} python `uv python install {{ cookiecutter.python_version }}` if not installed
 2. Create virtual environment: `uv venv --python {{ cookiecutter.python_version }}`
 3. Activate environment `source .venv/bin/activate`
