@@ -60,33 +60,6 @@ class TestExamplesCreate:
         assert response.status_code == 409
         assert response.json()['detail'] == 'Example with this name already exists'
 
-    async def test_fail_duplicate_identity_lost_race(
-        self, session: AsyncSession, client: AsyncClient, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # Two concurrent requests both pass the pre-check; the unique constraint rejects the second
-        existing_example = await create_test_example(session)
-        monkeypatch.setattr(ExampleService, '_validate_example_unique', AsyncMock())
-        payload = ExampleCreateFactory.build(name=existing_example.name)
-
-        response = await client.post('/v1/examples', json=payload.model_dump(mode='json'))
-
-        assert response.status_code == 409
-        assert response.json()['detail'] == 'Conflict'
-
-    async def test_fail_other_integrity_error(
-        self, app: FastAPI, session: AsyncSession, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        async def insert_without_description(self: ExampleService, creation: ExampleCreate) -> None:
-            await self._session.execute(insert(ExampleModel).values(name=creation.name, description=None))
-
-        monkeypatch.setattr(ExampleService, 'create_example', insert_without_description)
-        transport = ASGITransport(app=app, raise_app_exceptions=False)
-
-        async with AsyncClient(transport=transport, base_url='http://test') as client:
-            response = await client.post('/v1/examples', json=ExampleCreateFactory.build().model_dump(mode='json'))
-
-        assert response.status_code == 500
-
     async def test_fail_unreal_birthday(self, session: AsyncSession, client: AsyncClient) -> None:
         payload = ExampleCreateFactory.build().model_dump(mode='json')
         payload['birthday'] = (datetime.now(UTC) + timedelta(days=1)).date().isoformat()

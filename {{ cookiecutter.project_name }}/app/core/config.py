@@ -76,7 +76,10 @@ class OpenAISettings(_EnvSettings):
     api_key: SecretStr
     timeout_seconds: int = Field(default=180, gt=0)
     base_url: str = ''
-    model_name: str | Literal['gpt-5.4'] = 'gpt-5.4'
+    gpt_5_4_model_name: str | Literal['gpt-5.4'] = 'gpt-5.4'
+    gpt_5_4_mini_model_name: str | Literal['gpt-5.4-mini'] = 'gpt-5.4-mini'
+    gpt_5_2_model_name: str | Literal['gpt-5.2'] = 'gpt-5.2'
+    gpt_5_1_model_name: str | Literal['gpt-5.1'] = 'gpt-5.1'
 
 
 class AwsSettings(_EnvSettings):
@@ -94,8 +97,14 @@ class BedrockSettings(_EnvSettings):
     connect_timeout_seconds: int = Field(default=5, gt=0)
     read_timeout_seconds: int = Field(default=180, gt=0)
     connections_pool_size: int = Field(default=30, ge=1)
-    model_name: str | Literal['eu.anthropic.claude-sonnet-4-6-20260101-v1:0'] = (
+    model_sonnet_4_6: str | Literal['eu.anthropic.claude-sonnet-4-6-20260101-v1:0'] = (
         'eu.anthropic.claude-sonnet-4-6-20260101-v1:0'
+    )
+    model_opus_4_6: str | Literal['eu.anthropic.claude-opus-4-6-20260101-v1:0'] = (
+        'eu.anthropic.claude-opus-4-6-20260101-v1:0'
+    )
+    model_haiku_4_5: str | Literal['eu.anthropic.claude-haiku-4-5-20251001-v1:0'] = (
+        'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
     )
 
 

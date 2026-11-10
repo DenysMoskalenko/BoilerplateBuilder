@@ -7,18 +7,13 @@ from app.domains.examples_agent.schemas.schemas_agent import (
     ListExamplesToolInput,
 {%- endif %}
 )
-from app.domains.examples_agent.schemas.schemas_api import (
-    ExampleAgentModelName,
-    ExampleAgentRequest,
-    ExampleAgentResponse,
-)
+from app.domains.examples_agent.schemas.schemas_api import ExampleAgentRequest, ExampleAgentResponse
 
 __all__ = [
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
     'CountExamplesToolInput',
 {%- endif %}
     'ExampleAgentDeps',
-    'ExampleAgentModelName',
     'ExampleAgentRequest',
     'ExampleAgentResponse',
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
