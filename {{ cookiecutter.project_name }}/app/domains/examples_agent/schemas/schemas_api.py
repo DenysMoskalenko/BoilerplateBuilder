@@ -1,11 +1,16 @@
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
-from app.core.enums import AIModelName
+
+class ExampleAgentModelName(StrEnum):
+    PRIMARY = 'primary'
+    FALLBACK = 'fallback'
 
 
 class ExampleAgentRequest(BaseModel):
-    model: AIModelName
+    model: ExampleAgentModelName
     question: str = Field(min_length=1, max_length=2_048)
 
 

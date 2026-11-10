@@ -3,6 +3,9 @@
 from collections.abc import Sequence
 {%- endif %}
 from typing import Annotated
+{%- if cookiecutter.python_version == "3.11" %}
+from typing import TypeAlias
+{%- endif %}
 
 from fastapi import Depends
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
@@ -12,13 +15,14 @@ from pydantic_ai import Agent, ModelSettings, RunContext
 from pydantic_ai.models import Model
 from pydantic_ai.models.bedrock import BedrockConverseModel, BedrockModelSettings
 
-from app.infrastructure.llms.llm_models import get_llm_models_registry, ModelRegistry
+from app.infrastructure.llms.registry import get_fallback_model, get_primary_model
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from app.domains.examples.schemas import Example, ExampleListSorting
 {%- endif %}
 from app.domains.examples_agent.prompts import EXAMPLE_AGENT_SYSTEM_PROMPT
 from app.domains.examples_agent.schemas import (
     ExampleAgentDeps,
+    ExampleAgentModelName,
     ExampleAgentRequest,
     ExampleAgentResponse,
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
@@ -28,10 +32,26 @@ from app.domains.examples_agent.schemas import (
 {%- endif %}
 )
 
+{% if cookiecutter.python_version == "3.11" -%}
+ModelRegistry: TypeAlias = dict[ExampleAgentModelName, Model]
+{%- else -%}
+type ModelRegistry = dict[ExampleAgentModelName, Model]
+{%- endif %}
+
+
+def get_model_registry(
+    primary_model: Annotated[Model, Depends(get_primary_model)],
+    fallback_model: Annotated[Model, Depends(get_fallback_model)],
+) -> ModelRegistry:
+    return {
+        ExampleAgentModelName.PRIMARY: primary_model,
+        ExampleAgentModelName.FALLBACK: fallback_model,
+    }
+
 
 def get_examples_agent(
     payload: ExampleAgentRequest,
-    model_registry: Annotated[ModelRegistry, Depends(get_llm_models_registry)],
+    model_registry: Annotated[ModelRegistry, Depends(get_model_registry)],
 ) -> Agent[ExampleAgentDeps, ExampleAgentResponse]:
     """The FastAPI Dependency for getting examples agent"""
     return build_examples_agent(model_registry[payload.model])
@@ -65,7 +85,7 @@ def build_examples_agent(model: Model) -> Agent[ExampleAgentDeps, ExampleAgentRe
         return _build_tool_examples(examples_page.items)
 {%- endif %}
 
-    return agent
+    return agent{% if cookiecutter.project_type == "fastapi_agent" %}  # noqa: RET504{% endif %}
 
 
 def _get_examples_agent_model_settings(model: Model) -> ModelSettings:

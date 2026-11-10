@@ -7,7 +7,7 @@ import logging
 from botocore.exceptions import NoCredentialsError
 from httpx2 import AsyncClient
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior, UsageLimitExceeded
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
@@ -16,12 +16,10 @@ import pytest
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from sqlalchemy.ext.asyncio import AsyncSession
 {%- endif %}
-
-from app.core.enums import AIModelName
-{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+{% if cookiecutter.project_type == "fastapi_db_agent" %}
 from app.domains.examples.service import ExampleService
 {%- endif %}
-from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentResponse
+from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentModelName, ExampleAgentResponse
 from tests.mocks.agent_mocks import build_mock_model, build_raising_model
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from tests.mocks.agent_mocks import build_output_model_response
@@ -32,12 +30,12 @@ UNAVAILABLE_DETAIL = 'AI provider temporarily unavailable. Please retry shortly.
 
 
 class TestCreateExampleAgentResponse:
-    @pytest.mark.parametrize('model_name', list(AIModelName))
+    @pytest.mark.parametrize('model_name', list(ExampleAgentModelName))
     async def test_success(
         self,
         client: AsyncClient,
         test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
-        model_name: AIModelName,
+        model_name: ExampleAgentModelName,
     ) -> None:
         answer = 'We have 3 examples.'
         with test_examples_agent.override(model=build_mock_model(ExampleAgentResponse(answer=answer))):
@@ -62,8 +60,21 @@ class TestCreateExampleAgentResponse:
                 'AI agent exceeded its usage limit.',
                 logging.WARNING,
             ),
+            (
+                UnexpectedModelBehavior('Exceeded maximum retries (0) for output validation'),
+                503,
+                'AI model returned an unexpected response.',
+                logging.ERROR,
+            ),
         ],
-        ids=['http_429', 'http_401', 'api_error', 'botocore_no_credentials', 'usage_limit_exceeded'],
+        ids=[
+            'http_429',
+            'http_401',
+            'api_error',
+            'botocore_no_credentials',
+            'usage_limit_exceeded',
+            'unexpected_model_behavior',
+        ],
     )
     async def test_provider_error_mapping(
         self,
@@ -78,7 +89,7 @@ class TestCreateExampleAgentResponse:
         with test_examples_agent.override(model=build_raising_model(exc)):
             response = await client.post(
                 '/v1/agents/examples/conversations',
-                json={'model': 'gpt-5.4', 'question': 'How many examples do we have?'},
+                json={'model': 'primary', 'question': 'How many examples do we have?'},
             )
 
         assert response.status_code == expected_status
@@ -118,7 +129,7 @@ class TestCreateExampleAgentResponse:
 
         with test_examples_agent.override(model=FunctionModel(call_tool_twice)):
             response = await client.post(
-                '/v1/agents/examples/conversations', json={'model': 'gpt-5.4', 'question': 'How many examples?'}
+                '/v1/agents/examples/conversations', json={'model': 'primary', 'question': 'How many examples?'}
             )
 
         assert response.status_code == 200

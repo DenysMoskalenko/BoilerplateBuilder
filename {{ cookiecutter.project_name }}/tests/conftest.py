@@ -117,15 +117,13 @@ async def _engine(_postgres_container: PostgresContainer) -> AsyncIterable[Async
     alembic_config = get_alembic_config(script_location=find_migrations_script_location())
 
     engine = create_async_engine(get_settings().DATABASE.url.unicode_string())
-    async with engine.begin() as connection:
-        await connection.run_sync(lambda conn: downgrade(alembic_config, 'base'))
-        await connection.run_sync(lambda conn: upgrade(alembic_config, 'head'))
+    downgrade(alembic_config, 'base')
+    upgrade(alembic_config, 'head')
 
     try:
         yield engine
     finally:
-        async with engine.begin() as connection:
-            await connection.run_sync(lambda conn: downgrade(alembic_config, 'base'))
+        downgrade(alembic_config, 'base')
         await engine.dispose()
 
 
