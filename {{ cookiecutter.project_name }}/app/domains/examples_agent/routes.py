@@ -17,6 +17,5 @@ async def create_agent_response(
     service: Annotated[ExampleAgentService, Depends()],
     agent: Annotated[Agent[ExampleAgentDeps, ExampleAgentResponse], Depends(get_examples_agent)],
 ) -> ExampleAgentResponse:
-    answer = await service.answer(payload, agent)
-    return answer
+    return await service.answer(payload, agent)
 {%- endif %}

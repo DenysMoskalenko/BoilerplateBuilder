@@ -65,7 +65,7 @@ def build_examples_agent(model: Model) -> Agent[ExampleAgentDeps, ExampleAgentRe
         return _build_tool_examples(examples_page.items)
 {%- endif %}
 
-    return agent
+    return agent{% if cookiecutter.project_type == "fastapi_agent" %}  # noqa: RET504{% endif %}
 
 
 def _get_examples_agent_model_settings(model: Model) -> ModelSettings:

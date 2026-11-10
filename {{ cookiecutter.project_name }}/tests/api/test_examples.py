@@ -33,9 +33,7 @@ async def create_test_example(
         **({'description': description} if description is not None else {}),
         **({'birthday': birthday} if birthday is not None else {}),
     )
-    example = await ExampleService(session).create_example(payload)
-    await session.flush()
-    return example
+    return await ExampleService(session).create_example(payload)
 
 
 class TestExamplesCreate:
