@@ -1,7 +1,8 @@
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] -%}
 import asyncio
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from alembic.command import upgrade
 from fastapi import FastAPI

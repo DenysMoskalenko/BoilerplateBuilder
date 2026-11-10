@@ -81,11 +81,11 @@ build-backend = "hatchling.build"
 packages = ["app"]
 
 
-[tool.pytest.ini_options]
+[tool.pytest]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
-addopts = "-ra"
+addopts = ["-ra"]
 filterwarnings = ["error"]
 
 [tool.ty.rules]
@@ -123,7 +123,15 @@ select = [
     "ANN", # flake8-annotations
     "FAST", # FastAPI
     "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+    "UP", # pyupgrade
     "RUF", # Ruff-specific rules
+]
+ignore = [
+    # The shipped code also runs on Python 3.11: no `type` aliases, no PEP 695 generics.
+    "UP040",
+    "UP047",
 ]
 
 [tool.ruff.lint.mccabe]
