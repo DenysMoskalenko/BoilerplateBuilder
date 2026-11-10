@@ -7,7 +7,7 @@ import logging
 from botocore.exceptions import NoCredentialsError
 from httpx2 import AsyncClient
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior, UsageLimitExceeded
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
@@ -62,21 +62,8 @@ class TestCreateExampleAgentResponse:
                 'AI agent exceeded its usage limit.',
                 logging.WARNING,
             ),
-            (
-                UnexpectedModelBehavior('Exceeded maximum retries (0) for output validation'),
-                503,
-                'AI model returned an unexpected response.',
-                logging.ERROR,
-            ),
         ],
-        ids=[
-            'http_429',
-            'http_401',
-            'api_error',
-            'botocore_no_credentials',
-            'usage_limit_exceeded',
-            'unexpected_model_behavior',
-        ],
+        ids=['http_429', 'http_401', 'api_error', 'botocore_no_credentials', 'usage_limit_exceeded'],
     )
     async def test_provider_error_mapping(
         self,

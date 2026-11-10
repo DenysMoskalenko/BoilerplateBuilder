@@ -14,7 +14,7 @@ from app.core.exceptions import AlreadyExistError, NotFoundError
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
 from botocore.exceptions import BotoCoreError
-from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior, UsageLimitExceeded
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UsageLimitExceeded
 
 _logger = logging.getLogger(__name__)
 {%- endif %}
@@ -31,9 +31,6 @@ def include_exception_handlers(app: FastAPI) -> None:
     # Bedrock wraps ClientError, timeouts and connection errors; any other BotoCoreError reaches the app unwrapped
     app.add_exception_handler(BotoCoreError, cast(ExceptionHandler, ai_provider_unavailable_exception_handler))
     app.add_exception_handler(UsageLimitExceeded, cast(ExceptionHandler, usage_limit_exceeded_exception_handler))
-    app.add_exception_handler(
-        UnexpectedModelBehavior, cast(ExceptionHandler, unexpected_model_behavior_exception_handler)
-    )
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
@@ -71,14 +68,6 @@ def usage_limit_exceeded_exception_handler(request: Request, exc: UsageLimitExce
     raise HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail='AI agent exceeded its usage limit.',
-    ) from exc
-
-
-def unexpected_model_behavior_exception_handler(request: Request, exc: UnexpectedModelBehavior) -> NoReturn:  # noqa: ARG001
-    _logger.error('AI model returned an unexpected response', exc_info=exc)
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail='AI model returned an unexpected response.',
     ) from exc
 {%- endif %}
 {%- endif %}
