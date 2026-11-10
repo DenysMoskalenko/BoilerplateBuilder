@@ -35,7 +35,7 @@ def override_dependency(app: FastAPI, dependency: Callable, override: Callable) 
 
 
 @contextmanager
-def temporary_override(app: FastAPI, dependency: Callable, override: Callable) -> Generator[None, None, None]:
+def temporary_override(app: FastAPI, dependency: Callable, override: Callable) -> Generator[None]:
     """Temporarily override a FastAPI dependency and restore the previous state on exit."""
     previous = {app: app.dependency_overrides.get(dependency)}
     for route in app.router.routes:
@@ -53,7 +53,7 @@ def temporary_override(app: FastAPI, dependency: Callable, override: Callable) -
 
 
 @contextmanager
-def temporary_overrides(app: FastAPI, overrides: Sequence[DepOverride]) -> Generator[None, None, None]:
+def temporary_overrides(app: FastAPI, overrides: Sequence[DepOverride]) -> Generator[None]:
     """Temporarily override multiple FastAPI dependencies and restore the previous state on exit."""
     with ExitStack() as stack:
         for dep in overrides:

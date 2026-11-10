@@ -1,3 +1,7 @@
+from collections.abc import AsyncGenerator
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+from collections.abc import AsyncIterable, Generator
+{%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 from collections.abc import Iterator
 {%- endif %}
@@ -5,12 +9,9 @@ import os
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 import pathlib
 {%- endif %}
-from typing import Any, AsyncGenerator
+from typing import Any
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 from typing import cast
-{%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-from typing import AsyncIterable, Generator
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
@@ -128,7 +129,7 @@ async def _engine(_postgres_container: PostgresContainer) -> AsyncIterable[Async
 
 
 @pytest.fixture(scope='session', autouse=True)
-def _postgres_container() -> Generator[PostgresContainer, Any, None]:
+def _postgres_container() -> Generator[PostgresContainer]:
     with PostgresContainer(
         image='postgres:18-alpine',
         username='test_boilerplate',
@@ -153,5 +154,5 @@ def _postgres_container() -> Generator[PostgresContainer, Any, None]:
 
 def find_migrations_script_location() -> str:
     """Help find a script location if tests were run by debugger or any other way except writing 'pytest' in cli"""
-    return os.path.join(pathlib.Path(os.path.dirname(os.path.realpath(__file__))).parent, 'migrations')
+    return str(pathlib.Path(__file__).resolve().parent.parent / 'migrations')
 {%- endif %}

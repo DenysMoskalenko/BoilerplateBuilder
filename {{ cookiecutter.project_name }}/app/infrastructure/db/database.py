@@ -1,7 +1,8 @@
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+from collections.abc import AsyncGenerator, AsyncIterable
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import Any, AsyncGenerator, AsyncIterable
+from typing import Any
 
 from alembic.config import Config
 from sqlalchemy import MetaData

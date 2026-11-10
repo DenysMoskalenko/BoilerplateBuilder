@@ -113,7 +113,7 @@ def _wrap_with_hooks(
 
 
 @contextmanager
-def _hook_scope(before: Hook, after: Hook, on_exception: Hook) -> Generator[None, None, None]:
+def _hook_scope(before: Hook, after: Hook, on_exception: Hook) -> Generator[None]:
     """Run metric hooks in the correct order around a decorated function call."""
     if before:
         before()
@@ -129,7 +129,7 @@ def _hook_scope(before: Hook, after: Hook, on_exception: Hook) -> Generator[None
 
 
 @contextmanager
-def _observe_latency(histogram: Histogram) -> Generator[None, None, None]:
+def _observe_latency(histogram: Histogram) -> Generator[None]:
     """Record call duration even when the wrapped function raises."""
     start = time.perf_counter()
     try:
