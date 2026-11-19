@@ -14,7 +14,7 @@ from pydantic_ai.models.bedrock import BedrockConverseModel, BedrockModelSetting
 
 from app.infrastructure.llms.llm_models import get_llm_models_registry, ModelRegistry
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
-from app.domains.examples.schemas import Example, ExampleListSorting
+from app.domains.examples.schemas import Example
 {%- endif %}
 from app.domains.examples_agent.prompts import EXAMPLE_AGENT_SYSTEM_PROMPT
 from app.domains.examples_agent.schemas import (
@@ -58,9 +58,7 @@ def build_examples_agent(model: Model) -> Agent[ExampleAgentDeps, ExampleAgentRe
         ctx: RunContext[ExampleAgentDeps], payload: ListExamplesToolInput
     ) -> list[ExampleAgentToolExample]:
         examples_page = await ctx.deps.example_service.list_examples(
-            payload.filters,
-            ExampleListSorting(sort_by='name', sort_order='asc'),
-            pagination_params=Params(page=1, size=payload.limit),
+            payload.filters, pagination_params=Params(page=1, size=payload.limit)
         )
         return _build_tool_examples(examples_page.items)
 {%- endif %}

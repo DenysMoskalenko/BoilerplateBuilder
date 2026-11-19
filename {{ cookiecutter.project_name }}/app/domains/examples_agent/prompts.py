@@ -14,9 +14,11 @@ Rules:
 - Be concise and factual.
 
 Filter normalization rules:
-- Filter by name or description using text search (case-insensitive, partial match).
-- "after 2020" means created_from=2021-01-01
-- "before 2020" means created_to=2019-12-31
+- Filter by name or description with `search` (case-insensitive, partial match).
+- "after 2020" means created_at__gte=2021-01-01
+- "before 2020" means created_at__lte=2019-12-31T23:59:59Z
+- Sort with `order_by` (newest first by default): name, description, birthday, created_at or updated_at;
+  prefix `-` for descending.
 """.strip()
 {%- else %}
 EXAMPLE_AGENT_SYSTEM_PROMPT = """

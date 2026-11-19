@@ -3,7 +3,7 @@
 Business logic is organised **by feature**, one folder per feature under `app/domains/`.
 Each domain is a vertical slice (`routes` → `service` → `schemas`) so that everything
 related to a feature lives together. Technical, cross-cutting code lives outside the
-domains: in `app/core/` (config, logging,{% if cookiecutter.use_otel_observability == "yes" %} observability,{% endif %} base schemas, exceptions) and
+domains: in `app/core/` (config, logging,{% if cookiecutter.use_otel_observability == "yes" %} observability,{% endif %} exceptions) and
 `app/infrastructure/` ({% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}db{% endif %}{% if cookiecutter.project_type == "fastapi_db_agent" %}, {% endif %}{% if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}llms{% endif %}).
 
 Why the split: business code changes when a product requirement changes; technical code
@@ -19,6 +19,9 @@ A domain typically contains:
 | `routes.py`  | FastAPI router and endpoint handlers                       |
 | `schemas.py` | Pydantic request/response and internal models             |
 | `service.py` | Business logic; talks to the DB session and other services |
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+| `filters.py` | (list endpoints) `fastapi-filter` filtering and sorting     |
+{%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 | `agents.py`  | (agent features) Pydantic AI agent construction and tools  |
 | `prompts.py` | (agent features) system prompts and prompt text            |

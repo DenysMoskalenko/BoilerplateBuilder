@@ -34,7 +34,7 @@ All types share: Python 3.11–3.14, uv, Ruff + ty, pytest, Docker, Makefile, pr
 - PostgreSQL with async SQLAlchemy 2.0 and Alembic migrations
 - docker-compose for local Postgres
 - Testcontainers for isolated DB tests
-- Example model with CRUD service, pagination, filtering, and search
+- Example model with CRUD service, pagination, and `fastapi-filter` filtering, sorting, and search
 
 **Agent types** (`fastapi_agent`, `fastapi_db_agent`):
 - AI agent built with [pydantic-ai](https://github.com/pydantic/pydantic-ai)
@@ -54,7 +54,7 @@ your-project/
 ├── app/
 │   ├── main.py
 │   ├── router.py                      # Includes domain routers into the app (setup_routers)
-│   ├── core/                          # Config, logging, observability, exceptions, schemas
+│   ├── core/                          # Config, logging, observability, exceptions
 │   ├── infrastructure/                # Technical adapters
 │   │   ├── db/
 │   │   │   └── models/                # All SQLAlchemy models (db types)

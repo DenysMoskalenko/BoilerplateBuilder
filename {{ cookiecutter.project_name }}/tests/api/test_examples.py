@@ -85,10 +85,7 @@ class TestExamplesList:
         second_example = await create_test_example(session, name='Example B')
         assert first_example.name < second_example.name
 
-        response = await client.get(
-            '/v1/examples',
-            params={'page': 2, 'size': 1, 'sort_by': 'name', 'sort_order': 'asc'},
-        )
+        response = await client.get('/v1/examples', params={'page': 2, 'size': 1, 'order_by': 'name'})
         assert response.status_code == 200
 
         actual = response.json()
@@ -101,16 +98,40 @@ class TestExamplesList:
         }
         assert actual == expected
 
-    async def test_list_filters(self, session: AsyncSession, client: AsyncClient) -> None:
-        await create_test_example(session, name='Alpha', description='First item')
-        matching_example = await create_test_example(session, name='Alpha Beta', description='Second item')
+    async def test_list_sorts_descending(self, session: AsyncSession, client: AsyncClient) -> None:
+        first_example = await create_test_example(session, name='Example A')
+        second_example = await create_test_example(session, name='Example B')
+
+        response = await client.get('/v1/examples', params={'order_by': '-name'})
+        assert response.status_code == 200
+
+        assert [item['id'] for item in response.json()['items']] == [second_example.id, first_example.id]
+
+    async def test_list_fails_on_not_sortable_field(self, session: AsyncSession, client: AsyncClient) -> None:
+        response = await client.get('/v1/examples', params={'order_by': 'id'})
+
+        assert response.status_code == 422
+        assert 'Sorting by' in response.json()['detail'][0]['msg']
+
+    async def test_list_searches_name_and_description(self, session: AsyncSession, client: AsyncClient) -> None:
+        found_by_name = await create_test_example(session, name='Alpha', description='First item')
+        found_by_description = await create_test_example(session, name='Beta', description='Second ALPHA item')
         await create_test_example(session, name='Gamma', description='Third item')
 
-        response = await client.get('/v1/examples', params={'name': 'alpha', 'description': 'Second'})
+        response = await client.get('/v1/examples', params={'search': 'alpha', 'order_by': 'name'})
         assert response.status_code == 200
 
         examples = response.json()['items']
-        assert examples == [matching_example.model_dump(mode='json')]
+        assert examples == [found_by_name.model_dump(mode='json'), found_by_description.model_dump(mode='json')]
+
+    async def test_list_search_matches_wildcards_literally(self, session: AsyncSession, client: AsyncClient) -> None:
+        literal_match = await create_test_example(session, name='snake_case')
+        await create_test_example(session, name='snakeXcase')
+
+        response = await client.get('/v1/examples', params={'search': 'snake_case'})
+        assert response.status_code == 200
+
+        assert response.json()['items'] == [literal_match.model_dump(mode='json')]
 
     async def test_list_breaks_sorting_ties_by_id(self, session: AsyncSession, client: AsyncClient) -> None:
         # Rows from one transaction share created_at (the default sort); inserting out of id order
@@ -128,13 +149,17 @@ class TestExamplesList:
         assert ids == [1, 2, 3]
 
     async def test_list_filters_by_ids(self, session: AsyncSession, client: AsyncClient) -> None:
-        first_example = await create_test_example(session)
-        await create_test_example(session)
+        first_example = await create_test_example(session, name='Example A')
+        second_example = await create_test_example(session, name='Example B')
+        await create_test_example(session, name='Example C')
 
-        response = await client.get('/v1/examples', params={'ids': [first_example.id]})
+        response = await client.get(
+            '/v1/examples', params={'id__in': f'{first_example.id},{second_example.id}', 'order_by': 'name'}
+        )
         assert response.status_code == 200
 
-        assert response.json()['items'] == [first_example.model_dump(mode='json')]
+        examples = response.json()['items']
+        assert examples == [first_example.model_dump(mode='json'), second_example.model_dump(mode='json')]
 
     @pytest.mark.parametrize('naive', [False, True], ids=['aware', 'naive_as_utc'])
     async def test_list_filters_by_created_at(self, session: AsyncSession, client: AsyncClient, naive: bool) -> None:
@@ -143,8 +168,8 @@ class TestExamplesList:
         assert example.created_at > hour_ago
         boundary = (hour_ago.replace(tzinfo=None) if naive else hour_ago).isoformat()
 
-        created_after = await client.get('/v1/examples', params={'created_from': boundary})
-        created_before = await client.get('/v1/examples', params={'created_to': boundary})
+        created_after = await client.get('/v1/examples', params={'created_at__gte': boundary})
+        created_before = await client.get('/v1/examples', params={'created_at__lte': boundary})
 
         assert created_after.json()['items'] == [example.model_dump(mode='json')]
         assert created_before.json()['items'] == []
