@@ -5,9 +5,10 @@ import asyncio
 import logging
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
+from botocore.exceptions import BotoCoreError, ClientError
 from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 from mypy_boto3_bedrock_runtime.type_defs import CountTokensInputTypeDef
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAIError
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
@@ -49,21 +50,26 @@ async def check_database_status(
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
 
-async def check_bedrock_status(bedrock_client: BedrockRuntimeClient, model_id: str) -> LivenessStatus:
+async def check_bedrock_status(
+    bedrock_client: BedrockRuntimeClient, model_id: str, timeout_seconds: float
+) -> LivenessStatus:
     input_: CountTokensInputTypeDef = {'converse': {'messages': [{'role': 'user', 'content': [{'text': 'ping'}]}]}}
     try:
-        await asyncio.to_thread(bedrock_client.count_tokens, modelId=model_id, input=input_)
-    except Exception as exc:
-        _logger.error('Bedrock health check failed', exc_info=exc)
+        async with asyncio.timeout(timeout_seconds):
+            # boto3 cannot be cancelled: past the deadline its thread runs on until botocore's own timeouts end it.
+            await asyncio.to_thread(bedrock_client.count_tokens, modelId=model_id, input=input_)
+    except (BotoCoreError, ClientError, TimeoutError) as exc:
+        _logger.warning('Readiness check: Bedrock is down: %s: %r', type(exc).__name__, str(exc))
         return 'DOWN'
     return 'UP'
 
 
-async def check_openai_status(openai_client: AsyncOpenAI) -> LivenessStatus:
+async def check_openai_status(openai_client: AsyncOpenAI, timeout_seconds: float) -> LivenessStatus:
     try:
-        await openai_client.models.list()
-    except Exception as exc:
-        _logger.error('OpenAI health check failed', exc_info=exc)
+        async with asyncio.timeout(timeout_seconds):
+            await openai_client.models.list()
+    except (OpenAIError, TimeoutError) as exc:
+        _logger.warning('Readiness check: OpenAI is down: %s: %r', type(exc).__name__, str(exc))
         return 'DOWN'
     return 'UP'
 {%- endif %}

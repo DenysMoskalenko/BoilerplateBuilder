@@ -1,9 +1,14 @@
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+{%- if cookiecutter.project_type != "fastapi_slim" %}
 import asyncio
 {%- endif %}
 from datetime import datetime, UTC
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+{%- if cookiecutter.project_type != "fastapi_slim" %}
 import logging
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+import threading
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from types import TracebackType
 {%- endif %}
 {%- if cookiecutter.project_type != "fastapi_slim" %}
@@ -13,14 +18,22 @@ from types import SimpleNamespace
 from typing import Any, cast, Self
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 {%- endif %}
 
+{% if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
+from botocore.exceptions import EndpointConnectionError
+{% endif -%}
 from fastapi import FastAPI
 from freezegun import freeze_time
 from httpx2 import AsyncClient
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+from openai import OpenAIError
+{%- endif %}
+{%- if cookiecutter.project_type != "fastapi_slim" %}
 import pytest
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 {%- endif %}
@@ -169,8 +182,8 @@ async def test_health_ready_success(app: FastAPI, client: AsyncClient) -> None:
 
 
 @freeze_time('2024-01-02T03:04:05Z', real_asyncio=True)
-async def test_health_ready_bedrock_down(app: FastAPI, client: AsyncClient) -> None:
-    bedrock_client = SimpleNamespace(count_tokens=lambda **kwargs: (_ for _ in ()).throw(RuntimeError('bedrock down')))
+async def test_health_ready_bedrock_down(app: FastAPI, client: AsyncClient, caplog: pytest.LogCaptureFixture) -> None:
+    bedrock_client = SimpleNamespace(count_tokens=Mock(side_effect=EndpointConnectionError(endpoint_url='https://bedrock.test')))
     openai_client = SimpleNamespace(models=SimpleNamespace(list=AsyncMock(return_value=None)))
 
     with temporary_overrides(
@@ -193,12 +206,14 @@ async def test_health_ready_bedrock_down(app: FastAPI, client: AsyncClient) -> N
         timestamp=datetime.now(UTC),
     ).model_dump(mode='json')
     assert actual == expected
+    records = [record for record in caplog.records if record.name == 'app.domains.health_checks.service']
+    assert [(record.levelno, record.exc_info) for record in records] == [(logging.WARNING, None)]
 
 
 @freeze_time('2024-01-02T03:04:05Z', real_asyncio=True)
-async def test_health_ready_openai_down(app: FastAPI, client: AsyncClient) -> None:
+async def test_health_ready_openai_down(app: FastAPI, client: AsyncClient, caplog: pytest.LogCaptureFixture) -> None:
     bedrock_client = SimpleNamespace(count_tokens=lambda **kwargs: {'inputTokens': 1})
-    openai_client = SimpleNamespace(models=SimpleNamespace(list=AsyncMock(side_effect=RuntimeError('openai down'))))
+    openai_client = SimpleNamespace(models=SimpleNamespace(list=AsyncMock(side_effect=OpenAIError('openai down'))))
 
     with temporary_overrides(
         app,
@@ -220,6 +235,8 @@ async def test_health_ready_openai_down(app: FastAPI, client: AsyncClient) -> No
         timestamp=datetime.now(UTC),
     ).model_dump(mode='json')
     assert actual == expected
+    records = [record for record in caplog.records if record.name == 'app.domains.health_checks.service']
+    assert [(record.levelno, record.exc_info) for record in records] == [(logging.WARNING, None)]
 {%- elif cookiecutter.project_type == "fastapi_db_agent" -%}
 @freeze_time('2024-01-02T03:04:05Z', real_asyncio=True)
 async def test_health_ready_success(app: FastAPI, client: AsyncClient) -> None:
@@ -279,8 +296,8 @@ async def test_health_ready_database_down(app: FastAPI, client: AsyncClient, cap
 
 
 @freeze_time('2024-01-02T03:04:05Z', real_asyncio=True)
-async def test_health_ready_bedrock_down(app: FastAPI, client: AsyncClient) -> None:
-    bedrock_client = SimpleNamespace(count_tokens=lambda **kwargs: (_ for _ in ()).throw(RuntimeError('bedrock down')))
+async def test_health_ready_bedrock_down(app: FastAPI, client: AsyncClient, caplog: pytest.LogCaptureFixture) -> None:
+    bedrock_client = SimpleNamespace(count_tokens=Mock(side_effect=EndpointConnectionError(endpoint_url='https://bedrock.test')))
     openai_client = SimpleNamespace(models=SimpleNamespace(list=AsyncMock(return_value=None)))
 
     with temporary_overrides(
@@ -303,12 +320,14 @@ async def test_health_ready_bedrock_down(app: FastAPI, client: AsyncClient) -> N
         timestamp=datetime.now(UTC),
     ).model_dump(mode='json')
     assert actual == expected
+    records = [record for record in caplog.records if record.name == 'app.domains.health_checks.service']
+    assert [(record.levelno, record.exc_info) for record in records] == [(logging.WARNING, None)]
 
 
 @freeze_time('2024-01-02T03:04:05Z', real_asyncio=True)
-async def test_health_ready_openai_down(app: FastAPI, client: AsyncClient) -> None:
+async def test_health_ready_openai_down(app: FastAPI, client: AsyncClient, caplog: pytest.LogCaptureFixture) -> None:
     bedrock_client = SimpleNamespace(count_tokens=lambda **kwargs: {'inputTokens': 1})
-    openai_client = SimpleNamespace(models=SimpleNamespace(list=AsyncMock(side_effect=RuntimeError('openai down'))))
+    openai_client = SimpleNamespace(models=SimpleNamespace(list=AsyncMock(side_effect=OpenAIError('openai down'))))
 
     with temporary_overrides(
         app,
@@ -330,6 +349,8 @@ async def test_health_ready_openai_down(app: FastAPI, client: AsyncClient) -> No
         timestamp=datetime.now(UTC),
     ).model_dump(mode='json')
     assert actual == expected
+    records = [record for record in caplog.records if record.name == 'app.domains.health_checks.service']
+    assert [(record.levelno, record.exc_info) for record in records] == [(logging.WARNING, None)]
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
@@ -393,4 +414,47 @@ async def test_a_cancelled_readiness_check_cancels_its_query() -> None:
         with pytest.raises(asyncio.CancelledError):
             await check
         await session.cancelled.wait()
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+
+
+@freeze_time('2024-01-02T03:04:05Z', real_asyncio=True)
+async def test_health_ready_ai_providers_down_at_their_deadlines(app: FastAPI, client: AsyncClient) -> None:
+    bedrock_released = threading.Event()
+    bedrock_client = SimpleNamespace(count_tokens=lambda **kwargs: bedrock_released.wait())
+    openai_client = SimpleNamespace(models=SimpleNamespace(list=lambda: asyncio.Event().wait()))
+    settings = get_settings()
+    short_deadlines = settings.model_copy(
+        update={
+            'BEDROCK': settings.BEDROCK.model_copy(update={'readiness_timeout_seconds': 0.01}),
+            'OPENAI': settings.OPENAI.model_copy(update={'readiness_timeout_seconds': 0.01}),
+        }
+    )
+    overrides = [
+        DepOverride(dependency=get_bedrock_client, override=lambda: bedrock_client),
+        DepOverride(dependency=get_openai_client, override=lambda: openai_client),
+        DepOverride(dependency=get_settings, override=lambda: short_deadlines),
+    ]
+    try:
+        with temporary_overrides(app, overrides):
+            async with asyncio.timeout(30):  # guards against a hang only
+                response = await client.get('/health/ready')
+    finally:
+        bedrock_released.set()
+
+    assert response.status_code == 503
+
+    actual = response.json()
+    assert HealthCheckReadyResponse.model_validate(actual)
+    expected = HealthCheckReadyResponse(
+        version=get_settings().PROJECT_VERSION,
+        status='NOT_READY',
+{%- if cookiecutter.project_type == "fastapi_db_agent" %}
+        dependencies=HealthCheckReadyDependencies(database='UP', bedrock='DOWN', openai='DOWN'),
+{%- else %}
+        dependencies=HealthCheckReadyDependencies(bedrock='DOWN', openai='DOWN'),
+{%- endif %}
+        timestamp=datetime.now(UTC),
+    ).model_dump(mode='json')
+    assert actual == expected
 {%- endif %}

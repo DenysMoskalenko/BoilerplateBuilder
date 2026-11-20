@@ -57,7 +57,7 @@ async def health_check_readiness(
         dependencies=HealthCheckReadyDependencies(),
     )
 {%- elif cookiecutter.project_type == "fastapi_db" -%}
-@router.get('/health/ready')
+@router.get('/health/ready', responses={status.HTTP_503_SERVICE_UNAVAILABLE: {'model': HealthCheckReadyResponse}})
 async def health_check_readiness(
     response: Response,
     session_factory: Annotated[async_sessionmaker[AsyncSession], Depends(async_session_factory)],
@@ -75,7 +75,7 @@ async def health_check_readiness(
 
     return ready_response
 {%- elif cookiecutter.project_type == "fastapi_agent" -%}
-@router.get('/health/ready')
+@router.get('/health/ready', responses={status.HTTP_503_SERVICE_UNAVAILABLE: {'model': HealthCheckReadyResponse}})
 async def health_check_readiness(
     response: Response,
     bedrock_client: Annotated[BedrockRuntimeClient, Depends(get_bedrock_client)],
@@ -83,8 +83,10 @@ async def health_check_readiness(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> HealthCheckReadyResponse:
     bedrock_status, openai_status = await asyncio.gather(
-        check_bedrock_status(bedrock_client, settings.BEDROCK.model_haiku_4_5),
-        check_openai_status(openai_client),
+        check_bedrock_status(
+            bedrock_client, settings.BEDROCK.model_haiku_4_5, settings.BEDROCK.readiness_timeout_seconds
+        ),
+        check_openai_status(openai_client, settings.OPENAI.readiness_timeout_seconds),
     )
 
     ready_response = HealthCheckReadyResponse(
@@ -97,7 +99,7 @@ async def health_check_readiness(
 
     return ready_response
 {%- elif cookiecutter.project_type == "fastapi_db_agent" -%}
-@router.get('/health/ready')
+@router.get('/health/ready', responses={status.HTTP_503_SERVICE_UNAVAILABLE: {'model': HealthCheckReadyResponse}})
 async def health_check_readiness(
     response: Response,
     session_factory: Annotated[async_sessionmaker[AsyncSession], Depends(async_session_factory)],
@@ -107,8 +109,10 @@ async def health_check_readiness(
 ) -> HealthCheckReadyResponse:
     db_status, bedrock_status, openai_status = await asyncio.gather(
         check_database_status(session_factory, settings.DATABASE.readiness_timeout_seconds),
-        check_bedrock_status(bedrock_client, settings.BEDROCK.model_haiku_4_5),
-        check_openai_status(openai_client),
+        check_bedrock_status(
+            bedrock_client, settings.BEDROCK.model_haiku_4_5, settings.BEDROCK.readiness_timeout_seconds
+        ),
+        check_openai_status(openai_client, settings.OPENAI.readiness_timeout_seconds),
     )
 
     ready_response = HealthCheckReadyResponse(
