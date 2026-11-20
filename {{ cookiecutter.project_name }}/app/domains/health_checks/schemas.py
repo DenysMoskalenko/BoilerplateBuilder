@@ -14,17 +14,10 @@ class HealthCheckLiveResponse(BaseModel):
 
 
 class HealthCheckReadyDependencies(BaseModel):
-{%- if cookiecutter.project_type == "fastapi_slim" %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    database: LivenessStatus
+{%- else %}
     pass
-{%- elif cookiecutter.project_type == "fastapi_db" %}
-    database: LivenessStatus
-{%- elif cookiecutter.project_type == "fastapi_agent" %}
-    bedrock: LivenessStatus
-    openai: LivenessStatus
-{%- elif cookiecutter.project_type == "fastapi_db_agent" %}
-    database: LivenessStatus
-    bedrock: LivenessStatus
-    openai: LivenessStatus
 {%- endif %}
 
 

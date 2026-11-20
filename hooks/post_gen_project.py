@@ -158,6 +158,7 @@ def remove_empty_files():
         paths_to_remove = [
             "app/infrastructure/db",
             "app/domains/examples",
+            "app/domains/health_checks/service.py",
             "app/core/exceptions.py",
             "migrations",
             "alembic.ini",

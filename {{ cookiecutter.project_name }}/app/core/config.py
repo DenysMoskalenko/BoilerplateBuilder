@@ -75,7 +75,6 @@ class OpenAISettings(_EnvSettings):
 
     api_key: SecretStr
     timeout_seconds: int = Field(default=180, gt=0)
-    readiness_timeout_seconds: float = Field(default=5.0, gt=0)
     base_url: str = ''
     gpt_5_4_model_name: str | Literal['gpt-5.4'] = 'gpt-5.4'
     gpt_5_4_mini_model_name: str | Literal['gpt-5.4-mini'] = 'gpt-5.4-mini'
@@ -97,7 +96,6 @@ class BedrockSettings(_EnvSettings):
 
     connect_timeout_seconds: int = Field(default=5, gt=0)
     read_timeout_seconds: int = Field(default=180, gt=0)
-    readiness_timeout_seconds: float = Field(default=5.0, gt=0)
     connections_pool_size: int = Field(default=30, ge=1)
     model_sonnet_4_6: str | Literal['eu.anthropic.claude-sonnet-4-6-20260101-v1:0'] = (
         'eu.anthropic.claude-sonnet-4-6-20260101-v1:0'
