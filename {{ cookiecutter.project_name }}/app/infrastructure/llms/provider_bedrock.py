@@ -29,6 +29,13 @@ def get_bedrock_client(settings: Annotated[Settings, Depends(get_settings)]) -> 
     )
 
 
+def close_bedrock_client() -> None:
+    try:
+        get_bedrock_client(settings=get_settings()).close()  # by keyword, as FastAPI built it
+    finally:
+        get_bedrock_client.cache_clear()
+
+
 def get_bedrock_provider(
     bedrock_client: Annotated[BedrockRuntimeClient, Depends(get_bedrock_client)],
 ) -> BedrockProvider:

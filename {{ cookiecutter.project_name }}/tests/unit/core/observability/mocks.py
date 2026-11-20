@@ -12,6 +12,9 @@ from pytest import MonkeyPatch
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 from pydantic_ai import InstrumentationSettings
 {%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+from sqlalchemy import Engine
+{%- endif %}
 
 from app.core.config import Settings
 import app.core.observability.bootstrap as observability_bootstrap
@@ -72,8 +75,7 @@ class TracerProviderSpy:
 class LoggingInstrumentorSpy:
     setup: TracingBootstrapSpy
 
-    def instrument(self, *, set_logging_format: bool) -> None:
-        self.setup.logging_format_override_disabled = not set_logging_format
+    def instrument(self, *, inject_trace_context: bool, enable_log_auto_instrumentation: bool) -> None: ...
 
 
 @dataclass(slots=True)
@@ -91,14 +93,13 @@ class FastAPIInstrumentorSpy:
 class SQLAlchemyInstrumentorSpy:
     setup: TracingBootstrapSpy
 
-    def instrument(self) -> None:
+    def instrument(self, *, engine: Engine) -> None:
         self.setup.sqlalchemy_was_instrumented = True
 
 
 {%- endif %}
 @dataclass(slots=True)
 class TracingBootstrapSpy:
-    logging_format_override_disabled: bool = False
     fastapi_app: FastAPI | None = None
     fastapi_exclude_spans: tuple[str, ...] = ()
     fastapi_excluded_urls: str | None = None

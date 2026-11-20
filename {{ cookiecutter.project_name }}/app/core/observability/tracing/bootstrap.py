@@ -19,6 +19,9 @@ from pydantic_ai import Agent, InstrumentationSettings
 {%- endif %}
 
 from app.core.config import Settings
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+from app.infrastructure.db.database import async_engine
+{%- endif %}
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +43,12 @@ def setup(app: FastAPI, settings: Settings) -> None:
     if endpoint is None:
         raise ValueError('OBSERVABILITY_TRACING_OTLP_ENDPOINT is required when tracing is enabled')
     endpoint_url = endpoint.encoded_string()
-    LoggingInstrumentor().instrument(set_logging_format=False)
+    # Trace ids for the log formatters; set_logging_format no longer adds them, and would replace the format.
+    LoggingInstrumentor().instrument(inject_trace_context=True, enable_log_auto_instrumentation=False)
     FastAPIInstrumentor().instrument_app(app, exclude_spans=['send', 'receive'], excluded_urls=EXCLUDED_URLS_REGEX)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    SQLAlchemyInstrumentor().instrument()
+    # The engine itself: database.py bound create_async_engine before the instrumentor could patch it.
+    SQLAlchemyInstrumentor().instrument(engine=async_engine().sync_engine)
 {%- endif %}
 
     sampler = TraceIdRatioBased(settings.OBSERVABILITY.tracing_sample_rate_percent / 100)

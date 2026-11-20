@@ -58,7 +58,7 @@ def test_settings_error_keeps_env_file_values_out_of_the_message(
     monkeypatch.delenv('OBSERVABILITY_TRACING_OTLP_ENDPOINT', raising=False)
 
     with pytest.raises(ValidationError) as exc_info:
-        ObservabilitySettings()
+        ObservabilitySettings(_env_file='.env')
 
     assert 'input_value' not in str(exc_info.value)
 
