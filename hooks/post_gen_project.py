@@ -128,7 +128,6 @@ def remove_empty_files():
             "app/domains/examples_agent",
             "app/domains/health_checks/service.py",
             "app/core/enums.py",
-            "app/core/schemas.py",
             "app/core/exceptions.py",
             "app/core/exception_handlers.py",
             "app/core/lifespan.py",
@@ -158,7 +157,6 @@ def remove_empty_files():
         paths_to_remove = [
             "app/infrastructure/db",
             "app/domains/examples",
-            "app/core/schemas.py",
             "app/core/exceptions.py",
             "app/core/lifespan.py",
             "migrations",

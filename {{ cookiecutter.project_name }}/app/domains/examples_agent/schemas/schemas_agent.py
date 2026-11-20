@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, Field
 
-from app.domains.examples.schemas import ExampleListFilters
+from app.domains.examples.filters import ExampleFilter
 from app.domains.examples.service import ExampleService
 {%- endif %}
 
@@ -26,11 +26,11 @@ class ExampleAgentToolExample(BaseModel):
 
 
 class CountExamplesToolInput(BaseModel):
-    filters: ExampleListFilters = Field(default_factory=ExampleListFilters)
+    filters: ExampleFilter = Field(default_factory=ExampleFilter)
 
 
 class ListExamplesToolInput(BaseModel):
-    filters: ExampleListFilters = Field(default_factory=ExampleListFilters)
+    filters: ExampleFilter = Field(default_factory=ExampleFilter)
     limit: int = Field(default=20, ge=1, le=100)
 {%- endif %}
 {%- endif %}

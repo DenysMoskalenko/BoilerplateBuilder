@@ -6,20 +6,14 @@ from fastapi import Depends
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import TypeAdapter
-from sqlalchemy import delete, func, insert, Select, select, update
+from sqlalchemy import delete, func, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AlreadyExistError, NotFoundError
 from app.infrastructure.db.database import get_session
-from app.infrastructure.db.filters import apply_contains_filter
 from app.infrastructure.db.models.example import ExampleModel
-from app.domains.examples.schemas import (
-    Example,
-    ExampleCreate,
-    ExampleListFilters,
-    ExampleListSorting,
-    ExampleUpdate,
-)
+from app.domains.examples.filters import ExampleFilter
+from app.domains.examples.schemas import Example, ExampleCreate, ExampleUpdate
 {%- if cookiecutter.use_otel_observability == "yes" %}
 from app.core.observability.metrics import counters
 {%- endif %}
@@ -41,19 +35,13 @@ class ExampleService:
             raise NotFoundError(f'Example(id={example_id}) not found')
         return Example.model_validate(example)
 
-    async def list_examples(
-        self,
-        filters: ExampleListFilters,
-        sorting: ExampleListSorting,
-        pagination_params: Params,
-    ) -> Page[Example]:
+    async def list_examples(self, example_filter: ExampleFilter, pagination_params: Params) -> Page[Example]:
 {%- if cookiecutter.use_otel_observability == "yes" %}
-        has_filters = any([filters.ids, filters.name, filters.description, filters.created_from, filters.created_to])
+        has_filters = bool(example_filter.filtering_fields)
         counters.search_queries_total.labels(resource='examples', has_filters=str(has_filters).lower()).inc()
 {%- endif %}
-        query = select(ExampleModel)
-        query = self._apply_filters(query, filters)
-        query = sorting.sort_query(query, ExampleModel).order_by(ExampleModel.id)
+        query = example_filter.filter(select(ExampleModel))
+        query = example_filter.sort(query).order_by(ExampleModel.id)
         return await apaginate(
             self._session,
             query,
@@ -63,9 +51,8 @@ class ExampleService:
 
 {%- if cookiecutter.project_type == "fastapi_db_agent" %}
 
-    async def count_examples(self, filters: ExampleListFilters) -> int:
-        query = select(func.count()).select_from(ExampleModel)
-        query = self._apply_filters(query, filters)
+    async def count_examples(self, example_filter: ExampleFilter) -> int:
+        query = example_filter.filter(select(func.count()).select_from(ExampleModel))
         count = await self._session.scalar(query)
         if count is None:
             return 0
@@ -113,19 +100,6 @@ class ExampleService:
                 f'Example with id={example_id} not found but was requested for deletion',
                 extra={'extra': {'example_id': example_id}},
             )
-
-    def _apply_filters(self, query: Select, filters: ExampleListFilters) -> Select:
-        if filters.ids is not None:
-            query = query.where(ExampleModel.id.in_(filters.ids))
-        if filters.name is not None:
-            query = apply_contains_filter(query, ExampleModel.name, filters.name)
-        if filters.description is not None:
-            query = apply_contains_filter(query, ExampleModel.description, filters.description)
-        if filters.created_from is not None:
-            query = query.where(ExampleModel.created_at >= filters.created_from)
-        if filters.created_to is not None:
-            query = query.where(ExampleModel.created_at <= filters.created_to)
-        return query
 
     async def _validate_example_unique(
         self, example_payload: ExampleCreate | ExampleUpdate, *, exclude_example_id: int | None = None

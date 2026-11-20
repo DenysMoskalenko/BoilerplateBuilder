@@ -15,6 +15,7 @@ dependencies = [
     "uvicorn[standard]==0.54.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     "alembic==1.20.1",
+    "fastapi-filter[sqlalchemy]==3.0.0",
     "fastapi-pagination==0.16.1",
     "psycopg[binary]==3.3.6",
     "sqlalchemy[asyncio]==2.0.55",
@@ -26,15 +27,15 @@ dependencies = [
     "pydantic-extra-types==2.11.1",
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
-    "opentelemetry-sdk==1.45.1",
-    "opentelemetry-exporter-otlp==1.45.1",
-    "opentelemetry-instrumentation-logging==0.66b1",
-    "opentelemetry-semantic-conventions==0.66b1",
+    "opentelemetry-sdk==1.45.2",
+    "opentelemetry-exporter-otlp==1.45.2",
+    "opentelemetry-instrumentation-logging==0.66b2",
+    "opentelemetry-semantic-conventions==0.66b2",
     "prometheus-client==0.26.0",
-    "opentelemetry-instrumentation-fastapi==0.66b1",
+    "opentelemetry-instrumentation-fastapi==0.66b2",
     "prometheus-fastapi-instrumentator==8.1.0",
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-    "opentelemetry-instrumentation-sqlalchemy==0.66b1",
+    "opentelemetry-instrumentation-sqlalchemy==0.66b2",
 {%- endif %}
 {%- endif %}
 ]
@@ -42,7 +43,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff==0.17.2",
-    "ty==0.0.92",
+    "ty==0.0.104",
     "prek==0.5.7",
     "complexipy==8.2.0",
     "httpx2==2.16.0",

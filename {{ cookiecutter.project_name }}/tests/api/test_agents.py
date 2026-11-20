@@ -122,5 +122,27 @@ class TestCreateExampleAgentResponse:
             )
 
         assert response.status_code == 200
+
+    @pytest.mark.parametrize('tool_name', ['count_examples', 'list_examples'])
+    async def test_tool_accepts_filters(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        test_examples_agent: Agent[ExampleAgentDeps, ExampleAgentResponse],
+        tool_name: str,
+    ) -> None:
+        filters = {'search': 'alpha', 'created_at__gte': '2021-01-01', 'order_by': ['-name']}
+
+        def call_tool_with_filters(messages: list, info: AgentInfo) -> ModelResponse:
+            if len(messages) == 1:
+                return ModelResponse(parts=[ToolCallPart(tool_name, {'payload': {'filters': filters}})])
+            return build_output_model_response(info, ExampleAgentResponse(answer='Done.'))
+
+        with test_examples_agent.override(model=FunctionModel(call_tool_with_filters)):
+            response = await client.post(
+                '/v1/agents/examples/conversations', json={'model': 'gpt-5.4', 'question': 'List alpha examples'}
+            )
+
+        assert response.status_code == 200
 {%- endif %}
 {%- endif %}
