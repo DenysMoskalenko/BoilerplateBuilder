@@ -24,7 +24,7 @@ from app.domains.health_checks.schemas import (
 )
 from app.core.config import get_settings
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-from app.domains.health_checks.service import check_database_status
+from app.domains.health_checks.service import _abandoned_probes, check_database_status
 from app.infrastructure.db.database import async_session_factory
 from tests.dependencies import DepOverride, temporary_overrides
 
@@ -42,7 +42,8 @@ class FailingSession:
 
 
 class UnanswerableSession(FailingSession):
-    """Like psycopg on an unreachable server: the query never answers, and its cancellation waits for `released`."""
+    """Like psycopg on an unreachable server: the query never answers, its cancellation waits for `released`, then
+    fails as the connection drops."""
 
     def __init__(self) -> None:
         self.started, self.cancelled, self.released = asyncio.Event(), asyncio.Event(), asyncio.Event()
@@ -54,7 +55,7 @@ class UnanswerableSession(FailingSession):
         except asyncio.CancelledError:
             self.cancelled.set()
             await self.released.wait()
-            raise
+            raise SQLAlchemyError('connection lost while cancelling') from None
 {%- endif %}
 
 
@@ -114,7 +115,7 @@ async def test_health_ready_database_down(app: FastAPI, client: AsyncClient, cap
 
 @freeze_time('2024-01-02T03:04:05Z', real_asyncio=True)
 async def test_health_ready_database_down_at_its_deadline_while_the_query_still_cancels(
-    app: FastAPI, client: AsyncClient
+    app: FastAPI, client: AsyncClient, caplog: pytest.LogCaptureFixture
 ) -> None:
     session = UnanswerableSession()
     settings = get_settings()
@@ -131,6 +132,7 @@ async def test_health_ready_database_down_at_its_deadline_while_the_query_still_
                 response = await client.get('/health/ready')
     finally:
         session.released.set()
+    await asyncio.wait(set(_abandoned_probes))
 
     assert response.status_code == 503
 
@@ -143,6 +145,7 @@ async def test_health_ready_database_down_at_its_deadline_while_the_query_still_
         timestamp=datetime.now(UTC),
     ).model_dump(mode='json')
     assert actual == expected
+    assert [record.levelno for record in caplog.records if record.levelno >= logging.WARNING] == [logging.WARNING]
 
 
 async def test_a_cancelled_readiness_check_cancels_its_query() -> None:

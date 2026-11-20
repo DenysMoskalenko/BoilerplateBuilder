@@ -1,10 +1,11 @@
 from typing import Annotated
 
+{% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] -%}
 from fastapi import APIRouter, Depends, Response, status
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
-{%- endif %}
-
+{% else -%}
+from fastapi import APIRouter, Depends
+{% endif %}
 from app.domains.health_checks.schemas import (
     HealthCheckLiveResponse,
     HealthCheckReadyDependencies,

@@ -19,19 +19,23 @@ _abandoned_probes: set[asyncio.Task[None]] = set()
 async def check_database_status(
     session_factory: async_sessionmaker[AsyncSession], timeout_seconds: float
 ) -> LivenessStatus:
-    # A task of its own, awaited through a shield: cancelling a query, psycopg first asks the server to cancel it and
-    # waits for that, seconds past the deadline when the server is unreachable.
+    # A task of its own, waited on rather than awaited: cancelling a query, psycopg first asks the server to cancel it
+    # and waits for that, seconds past the deadline when the server is unreachable.
     probe = asyncio.create_task(_select_one(session_factory))
     try:
-        async with asyncio.timeout(timeout_seconds):
-            await asyncio.shield(probe)
+        await asyncio.wait([probe], timeout=timeout_seconds)
     except asyncio.CancelledError:
         _abandon(probe)
         raise
-    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+    # One line without a traceback: the kubelet probes every few seconds.
+    if not probe.done():
         _abandon(probe)
-        # One line without a traceback: the kubelet probes every few seconds. %r escapes newlines in the error.
-        _logger.warning('Readiness check: the database is down: %s: %r', type(exc).__name__, str(exc))
+        _logger.warning('Readiness check: the database did not answer within %ss', timeout_seconds)
+        return 'DOWN'
+    try:
+        probe.result()
+    except (SQLAlchemyError, OSError) as exc:
+        _logger.warning('Readiness check: the database is down: %s: %r', type(exc).__name__, str(exc))  # %r: no newlines
         return 'DOWN'
     return 'UP'
 
@@ -43,10 +47,15 @@ def resolve_readiness_status(*statuses: LivenessStatus) -> ReadinessStatus:
 
 
 def _abandon(probe: asyncio.Task[None]) -> None:
-    if not probe.done():
-        probe.cancel()
-        _abandoned_probes.add(probe)
-        probe.add_done_callback(_abandoned_probes.discard)
+    probe.cancel()
+    _abandoned_probes.add(probe)
+    probe.add_done_callback(_forget)
+
+
+def _forget(probe: asyncio.Task[None]) -> None:
+    _abandoned_probes.discard(probe)
+    if not probe.cancelled():
+        probe.exception()  # seen: a query failing as it cancels must not log a traceback after its one-line DOWN
 
 
 async def _select_one(session_factory: async_sessionmaker[AsyncSession]) -> None:

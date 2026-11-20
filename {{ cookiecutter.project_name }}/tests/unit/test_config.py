@@ -17,5 +17,6 @@ def test_settings_ignore_a_developers_env_file(monkeypatch: pytest.MonkeyPatch, 
     """Tests read dist.env, whatever a developer keeps in `.env`."""
     (tmp_path / '.env').write_text('LOG_LEVEL=CRITICAL\n')
     monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv('LOG_LEVEL', raising=False)
 
     assert Settings().LOG_LEVEL == 'INFO'
