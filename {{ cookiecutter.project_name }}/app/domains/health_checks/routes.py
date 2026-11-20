@@ -28,7 +28,7 @@ async def health_check_liveness(settings: Annotated[Settings, Depends(get_settin
 
 
 {% if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] -%}
-# Not Bedrock or OpenAI: every pod shares them, so failing readiness on them would take all pods out of traffic at once.
+# Not Bedrock or OpenAI: an outage there would take every pod out of traffic, routes that never call them included.
 {% endif -%}
 {% if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] -%}
 @router.get('/health/ready', responses={status.HTTP_503_SERVICE_UNAVAILABLE: {'model': HealthCheckReadyResponse}})

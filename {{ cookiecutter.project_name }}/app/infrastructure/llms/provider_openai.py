@@ -20,7 +20,7 @@ def get_openai_client(settings: Annotated[Settings, Depends(get_settings)]) -> A
 
 async def close_openai_client() -> None:
     try:
-        await get_openai_client(get_settings()).close()
+        await get_openai_client(settings=get_settings()).close()  # by keyword, as FastAPI built it
     finally:
         get_openai_client.cache_clear()
 

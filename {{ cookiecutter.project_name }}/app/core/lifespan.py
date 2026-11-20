@@ -42,8 +42,9 @@ async def startup(settings: Settings) -> None:
     async_session_factory()
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-    get_bedrock_client(settings)
-    get_openai_client(settings)
+    # By keyword, as FastAPI calls a dependency: lru_cache keys a positional call apart, as another client.
+    get_bedrock_client(settings=settings)
+    get_openai_client(settings=settings)
 {%- endif %}
 
 

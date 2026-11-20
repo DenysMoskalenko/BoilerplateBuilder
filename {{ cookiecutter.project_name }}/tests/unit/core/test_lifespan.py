@@ -28,16 +28,18 @@ async def test_lifespan_builds_the_clients_at_startup_and_closes_them_at_shutdow
     """Startup builds each client once: FastAPI runs sync dependencies in threads, where first requests would race."""
     await shutdown()  # closes what earlier tests opened
     async with app.router.lifespan_context(app):
-        built_at_startup = [getter.cache_info().currsize for getter in CLIENT_GETTERS]
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+        # As a request gets them: FastAPI calls a dependency with keyword arguments.
+        get_bedrock_client(settings=get_settings())
+        openai_client = get_openai_client(settings=get_settings())
+{%- endif %}
+        clients = [getter.cache_info().currsize for getter in CLIENT_GETTERS]
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
         async with async_engine().connect() as connection:
             pooled_connection = (await connection.get_raw_connection()).driver_connection
 {%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
-        openai_client = get_openai_client(get_settings())
-{%- endif %}
 
-    assert built_at_startup == [1] * len(CLIENT_GETTERS)
+    assert clients == [1] * len(CLIENT_GETTERS)
     assert [getter.cache_info().currsize for getter in CLIENT_GETTERS] == [0] * len(CLIENT_GETTERS)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     assert pooled_connection is not None and pooled_connection.closed

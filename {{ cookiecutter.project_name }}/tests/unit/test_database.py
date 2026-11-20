@@ -48,7 +48,7 @@ def test_missing_variable_keeps_raw_values_out_of_the_error(monkeypatch: pytest.
 
 
 def test_migrations_connect_with_the_configured_timeout() -> None:
-    """Against an unreachable database a migration gives up after the timeout, not libpq's default."""
+    """Against an unreachable database a migration gives up after the timeout, not psycopg's 130 s default."""
     connect_parameters: list[dict[str, str]] = []
 
     def record_parameters(dbapi_connection: psycopg.Connection, connection_record: ConnectionPoolEntry) -> None:
