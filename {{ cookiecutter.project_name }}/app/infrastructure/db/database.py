@@ -71,6 +71,14 @@ async def open_db_session() -> AsyncGenerator[AsyncSession, Any]:
         await session.close()
 
 
+async def close_database() -> None:
+    try:
+        await async_engine().dispose()
+    finally:
+        async_session_factory.cache_clear()
+        async_engine.cache_clear()
+
+
 def get_alembic_config(script_location: str = 'migrations') -> Config:
     alembic_config = Config()
     alembic_config.set_main_option('script_location', script_location)

@@ -2,9 +2,6 @@
 {%- if cookiecutter.project_type != "fastapi_slim" %}
 import asyncio
 {%- endif %}
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-from contextlib import suppress
-{%- endif %}
 import logging
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
@@ -14,26 +11,40 @@ from openai import AsyncOpenAI
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 
+{% if cookiecutter.use_otel_observability == "yes" -%}
+from opentelemetry.instrumentation.utils import suppress_instrumentation
+{% endif -%}
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 {%- endif %}
 
 from app.domains.health_checks.schemas import LivenessStatus, ReadinessStatus
 
 _logger = logging.getLogger(__name__)
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+# asyncio holds tasks weakly: a probe cut off at its deadline stays here until its cancellation has finished.
+_abandoned_probes: set[asyncio.Task[None]] = set()
 
 
-async def check_database_status(session: AsyncSession, timeout_seconds: float) -> LivenessStatus:
+async def check_database_status(
+    session_factory: async_sessionmaker[AsyncSession], timeout_seconds: float
+) -> LivenessStatus:
+    # A task of its own, awaited through a shield: cancelling a query, psycopg first asks the server to cancel it and
+    # waits for that, seconds past the deadline when the server is unreachable.
+    probe = asyncio.create_task(_select_one(session_factory))
     try:
         async with asyncio.timeout(timeout_seconds):
-            await session.execute(text('SELECT 1'))
-        return 'UP'
-    except Exception as exc:
-        _logger.error('Database readiness check failed', exc_info=exc)
-        with suppress(Exception):
-            await session.rollback()
+            await asyncio.shield(probe)
+    except asyncio.CancelledError:
+        _abandon(probe)
+        raise
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        _abandon(probe)
+        # One line without a traceback: the kubelet probes every few seconds. %r escapes newlines in the error.
+        _logger.warning('Readiness check: the database is down: %s: %r', type(exc).__name__, str(exc))
         return 'DOWN'
+    return 'UP'
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 
@@ -62,4 +73,23 @@ def resolve_readiness_status(*statuses: LivenessStatus) -> ReadinessStatus:
     if 'DOWN' in statuses:
         return 'NOT_READY'
     return 'READY'
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+
+
+def _abandon(probe: asyncio.Task[None]) -> None:
+    if not probe.done():
+        probe.cancel()
+        _abandoned_probes.add(probe)
+        probe.add_done_callback(_abandoned_probes.discard)
+
+
+async def _select_one(session_factory: async_sessionmaker[AsyncSession]) -> None:
+    async with session_factory() as session:
+{%- if cookiecutter.use_otel_observability == "yes" %}
+        with suppress_instrumentation():  # no trace per probe, as for the probe's request
+            await session.execute(text('SELECT 1'))
+{%- else %}
+        await session.execute(text('SELECT 1'))
+{%- endif %}
+{%- endif %}
 {%- endif %}

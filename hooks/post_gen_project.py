@@ -138,6 +138,7 @@ def remove_empty_files():
             "tests/factories.py",
             "tests/mocks",
             "tests/unit/test_database.py",
+            "tests/unit/core/test_lifespan.py",
         ]
         for p in paths_to_remove:
             _remove_path(project_root, p)
@@ -158,7 +159,6 @@ def remove_empty_files():
             "app/infrastructure/db",
             "app/domains/examples",
             "app/core/exceptions.py",
-            "app/core/lifespan.py",
             "migrations",
             "alembic.ini",
             "tests/api/test_examples.py",

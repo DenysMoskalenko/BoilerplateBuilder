@@ -9,7 +9,7 @@ from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 from openai import AsyncOpenAI
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 {%- endif %}
 
 from app.domains.health_checks.schemas import (
@@ -31,7 +31,7 @@ from app.domains.health_checks.service import (
 {%- endif %}
 from app.core.config import get_settings, Settings
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-from app.infrastructure.db.database import get_session
+from app.infrastructure.db.database import async_session_factory
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 from app.infrastructure.llms.provider_bedrock import get_bedrock_client
@@ -60,10 +60,10 @@ async def health_check_readiness(
 @router.get('/health/ready')
 async def health_check_readiness(
     response: Response,
-    session: Annotated[AsyncSession, Depends(get_session, scope='function')],
+    session_factory: Annotated[async_sessionmaker[AsyncSession], Depends(async_session_factory)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> HealthCheckReadyResponse:
-    db_status = await check_database_status(session, settings.DATABASE.readiness_timeout_seconds)
+    db_status = await check_database_status(session_factory, settings.DATABASE.readiness_timeout_seconds)
 
     ready_response = HealthCheckReadyResponse(
         version=settings.PROJECT_VERSION,
@@ -100,13 +100,13 @@ async def health_check_readiness(
 @router.get('/health/ready')
 async def health_check_readiness(
     response: Response,
-    session: Annotated[AsyncSession, Depends(get_session, scope='function')],
+    session_factory: Annotated[async_sessionmaker[AsyncSession], Depends(async_session_factory)],
     bedrock_client: Annotated[BedrockRuntimeClient, Depends(get_bedrock_client)],
     openai_client: Annotated[AsyncOpenAI, Depends(get_openai_client)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> HealthCheckReadyResponse:
     db_status, bedrock_status, openai_status = await asyncio.gather(
-        check_database_status(session, settings.DATABASE.readiness_timeout_seconds),
+        check_database_status(session_factory, settings.DATABASE.readiness_timeout_seconds),
         check_bedrock_status(bedrock_client, settings.BEDROCK.model_haiku_4_5),
         check_openai_status(openai_client),
     )
