@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = "=={{ cookiecutter.python_version }}.*"
 
 dependencies = [
-    "fastapi==0.162.0",
+    "fastapi==0.164.0",
     "pydantic-settings==2.16.1",
     "pydantic==2.14.3",
     "uvicorn[standard]==0.54.0",
