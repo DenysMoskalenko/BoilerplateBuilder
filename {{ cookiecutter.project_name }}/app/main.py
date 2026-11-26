@@ -29,6 +29,7 @@ def create_app() -> FastAPI:
     _app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.PROJECT_VERSION,
+        max_body_size=1 * 1024 * 1024,
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
         lifespan=lifespan,
 {%- endif %}
