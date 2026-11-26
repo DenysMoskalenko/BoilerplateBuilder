@@ -9,7 +9,7 @@ ROOT_LOGGER_NAME = 'root'
 UVICORN_LOGGER_NAMES = ('uvicorn', 'uvicorn.error', 'uvicorn.access')
 
 
-LogLevel: TypeAlias = Literal['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
+LogLevel: TypeAlias = Literal['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG']  # uvicorn takes no NOTSET
 
 
 def build_logging_config(log_level: LogLevel, format_type: LogFormatType) -> dict[str, Any]:
@@ -33,10 +33,8 @@ def build_logging_config(log_level: LogLevel, format_type: LogFormatType) -> dic
             }
         },
         ROOT_LOGGER_NAME: {'level': log_level, 'handlers': [DEFAULT_HANDLER_NAME]},
-        'loggers': {
-            logger_name: {'level': log_level, 'handlers': [DEFAULT_HANDLER_NAME], 'propagate': False}
-            for logger_name in UVICORN_LOGGER_NAMES
-        },
+        # Through the root handler, so a handler added there (an OTLP log exporter, Sentry) sees server errors too.
+        'loggers': {logger_name: {'level': log_level, 'propagate': True} for logger_name in UVICORN_LOGGER_NAMES},
     }
 
 

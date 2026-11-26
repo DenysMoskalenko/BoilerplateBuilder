@@ -75,7 +75,7 @@ Package-by-feature FastAPI app under `app/`: business logic lives in vertical sl
 - **`infrastructure/db`** (async SQLAlchemy 2.0, Alembic, fastapi-pagination, fastapi-filter; **all** models live in `db/models/` for single-metadata autogeneration) and **`infrastructure/llms`** (OpenAI + Bedrock model registry).
 - **`domains/examples_agent/`** (pydantic-ai) — `build_examples_agent(model)` constructs the `Agent`, `get_examples_agent` is its FastAPI dependency, tools are registered with `@agent.tool`.
 - **`core/observability/`** (optional) — wired by `observability.setup(app, settings)`; OTEL tracing + Prometheus metrics, with decorators `@track_inflight`, `@increment_after`, `@increment_on_error`, `@track_latency`. Structured JSON logging lives in `core/logging`.
-- db migrations can auto-run on startup via `core/lifespan.py` (`MIGRATION_ON_STARTUP`).
+- `core/lifespan.py` (db and agent types) builds every cached client at startup, closes them all at shutdown, and runs db migrations first when `MIGRATION_ON_STARTUP` is set.
 
 Tests (`asyncio_mode=auto`): `tests/api` (httpx `AsyncClient` + `ASGITransport`), `tests/unit`, `tests/mocks` (agents). `tests/conftest.py` provides `app` / `client` / `session` fixtures; db tests spin up a `PostgresContainer`; agent tests set `ALLOW_MODEL_REQUESTS = False`. Override DI in tests with the helpers in `tests/dependencies.py` (`override_dependency`, `temporary_override(s)`).
 

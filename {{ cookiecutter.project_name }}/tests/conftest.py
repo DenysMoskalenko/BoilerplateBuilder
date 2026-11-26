@@ -6,9 +6,7 @@ from collections.abc import AsyncIterable, Generator
 from collections.abc import Iterator
 {%- endif %}
 import os
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 import pathlib
-{%- endif %}
 from typing import Any
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 from typing import cast
@@ -32,7 +30,7 @@ from testcontainers.community.postgres import PostgresContainer
 from app.domains.examples_agent.agents import build_examples_agent, get_examples_agent
 from app.domains.examples_agent.schemas import ExampleAgentDeps, ExampleAgentResponse
 {%- endif %}
-from app.core.config import get_settings
+from app.core.config import _EnvSettings, get_settings
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
 from tests.mocks.agent_mocks import generate_test_agent
 {%- endif %}
@@ -50,6 +48,9 @@ def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
     This hook is called for every plugin and initial conftest
     file after command line options have been parsed.
     """
+    # Settings come from dist.env and the variables below, never from a developer's `.env`.
+    for settings_class in _EnvSettings.__subclasses__():
+        settings_class.model_config['env_file'] = pathlib.Path(__file__).resolve().parent.parent / 'dist.env'
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     os.environ['MIGRATION_ON_STARTUP'] = 'False'
 {%- endif %}

@@ -18,15 +18,14 @@ load_all_models()
 target_metadata = Base.metadata
 
 
-def get_url() -> str:
+def get_database_settings() -> DatabaseSettings:
     # Not `get_settings()`: a migration job must not need every integration's secrets.
-    return DatabaseSettings().url.unicode_string()  # type: ignore[ty:missing-argument]
+    return DatabaseSettings()  # type: ignore[ty:missing-argument]
 
 
 def run_migrations_offline() -> None:
-    url = get_url()
     context.configure(
-        url=url,
+        url=get_database_settings().url.unicode_string(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={'paramstyle': 'named'},
@@ -37,12 +36,14 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
+    database = get_database_settings()
     configuration = cast(dict[str, str], config.get_section(config.config_ini_section))
-    configuration['sqlalchemy.url'] = get_url()
+    configuration['sqlalchemy.url'] = database.url.unicode_string()
     connectable = engine_from_config(
         configuration,
         prefix='sqlalchemy.',
         poolclass=pool.NullPool,
+        connect_args={'connect_timeout': database.connect_timeout_seconds},
     )
 
     with connectable.connect() as connection:
@@ -50,6 +51,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():

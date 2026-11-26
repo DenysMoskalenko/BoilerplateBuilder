@@ -18,6 +18,13 @@ def get_openai_client(settings: Annotated[Settings, Depends(get_settings)]) -> A
     )
 
 
+async def close_openai_client() -> None:
+    try:
+        await get_openai_client(settings=get_settings()).close()  # by keyword, as FastAPI built it
+    finally:
+        get_openai_client.cache_clear()
+
+
 def get_openai_provider(openai_client: Annotated[AsyncOpenAI, Depends(get_openai_client)]) -> OpenAIProvider:
     return OpenAIProvider(openai_client=openai_client)
 {%- endif %}

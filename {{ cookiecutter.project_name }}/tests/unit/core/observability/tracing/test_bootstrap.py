@@ -1,14 +1,32 @@
 {%- if cookiecutter.use_otel_observability == "yes" %}
+import logging
 from typing import TypedDict, Unpack
 
 from fastapi import FastAPI
+from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+{%- endif %}
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from opentelemetry.semconv.attributes import service_attributes
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+from pydantic_ai import Agent
+{%- endif %}
 import pytest
 from pytest import MonkeyPatch
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+from sqlalchemy import text
+{%- endif %}
 
 from app.core.config import get_settings, Settings
 import app.core.observability.tracing.bootstrap as tracing_bootstrap
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+from app.domains.health_checks.service import check_database_status
+from app.infrastructure.db.database import close_database, open_db_session
+{%- endif %}
 from tests.unit.core.observability.mocks import SpanExporterSpy, TracingBootstrapSpy
 
 
@@ -55,11 +73,44 @@ def test_create_resource_sets_service_version() -> None:
     assert resource.attributes[service_attributes.SERVICE_VERSION] == '1.2.3'
 
 
-def test_setup_keeps_existing_logging_format(monkeypatch: MonkeyPatch) -> None:
-    """Tracing setup enriches logs without replacing the configured formatter."""
-    spy = setup_tracing(monkeypatch)
+async def test_setup_traces_queries_and_marks_log_records(monkeypatch: MonkeyPatch) -> None:
+    """The tracer provider is process-global, so this is the only test that installs it."""
+    exporter = InMemorySpanExporter()
+    monkeypatch.setattr(tracing_bootstrap, 'OTLPSpanExporter', lambda **_: exporter)
+    handlers_before_setup = list(logging.getLogger().handlers)
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    await close_database()  # setup instruments the engine it finds, so a new one
+{%- endif %}
+    try:
+        tracing_bootstrap.setup(app=FastAPI(), settings=build_settings(tracing_otlp_endpoint='http://localhost:4317'))
+        handlers_after_setup = list(logging.getLogger().handlers)
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+        async with open_db_session() as session:
+            await session.execute(text('SELECT 1'))
+            await check_database_status(session, timeout_seconds=5)
+{%- endif %}
+        with trace.get_tracer(__name__).start_as_current_span('logged') as span:
+            record = logging.getLogRecordFactory()(__name__, logging.INFO, __file__, 0, 'Inside a span', None, None)
+        tracer_provider = trace.get_tracer_provider()
+        assert isinstance(tracer_provider, TracerProvider)
+        tracer_provider.force_flush()
+        tracer_provider.shutdown()
+    finally:
+        LoggingInstrumentor().uninstrument()
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+        SQLAlchemyInstrumentor().uninstrument()
+        await close_database()
+{%- endif %}
+{%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+        Agent.instrument_all(False)
+{%- endif %}
 
-    assert spy.logging_format_override_disabled is True
+    assert record.__dict__['otelTraceID'] == format(span.get_span_context().trace_id, '032x')
+    assert handlers_after_setup == handlers_before_setup
+{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+    # The query in the app's session, and none from the readiness probe.
+    assert len([span for span in exporter.get_finished_spans() if span.name.startswith('SELECT')]) == 1
+{%- endif %}
 
 
 def test_setup_instruments_fastapi(monkeypatch: MonkeyPatch) -> None:

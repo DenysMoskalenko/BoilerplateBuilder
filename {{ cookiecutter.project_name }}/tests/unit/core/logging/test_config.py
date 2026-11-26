@@ -1,19 +1,20 @@
-from app.core.logging import LogFormatType, build_logging_config
-from app.core.logging.config import DEFAULT_HANDLER_NAME
+import logging
+from logging.handlers import BufferingHandler
+
+from app.core.logging import build_logging_config, configure_logging, LogFormatType
 
 
-def test_build_logging_config_routes_uvicorn_loggers_to_console() -> None:
-    """Logging config routes Uvicorn loggers through the application console handler."""
-    config = build_logging_config('DEBUG', LogFormatType.JSON)
+def test_uvicorn_records_reach_a_handler_on_the_root_logger() -> None:
+    """A handler added to the root logger (an OTLP log exporter, Sentry) sees server errors too."""
+    configure_logging('INFO', LogFormatType.STDOUT)
+    root_handler = BufferingHandler(capacity=10)
+    logging.getLogger().addHandler(root_handler)
+    try:
+        logging.getLogger('uvicorn.error').error('Exception in ASGI application')
+    finally:
+        logging.getLogger().removeHandler(root_handler)
 
-    assert {tuple(logger['handlers']) for logger in config['loggers'].values()} == {(DEFAULT_HANDLER_NAME,)}
-
-
-def test_build_logging_config_prevents_uvicorn_log_propagation() -> None:
-    """Logging config prevents duplicate Uvicorn records from propagating upward."""
-    config = build_logging_config('DEBUG', LogFormatType.JSON)
-
-    assert {logger['propagate'] for logger in config['loggers'].values()} == {False}
+    assert [record.getMessage() for record in root_handler.buffer] == ['Exception in ASGI application']
 
 
 def test_build_logging_config_applies_log_level_to_uvicorn_loggers() -> None:

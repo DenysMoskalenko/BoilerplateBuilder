@@ -50,19 +50,6 @@ path_separator = os
 # for all available tokens
 # file_template = %%(year)d%%(month).2d%%(day).2d_%%(hour).2d%%(minute).2d-%%(rev)s_%%(slug)s
 
-# lint with attempts to correct for incompatible black settings.
-# see https://alembic.sqlalchemy.org/en/latest/unreleased/int_black.html
-# for more details. Black compatibility mode is enabled by default if black is
-# installed.
-black_config_hook = alembic.env:run_black_if_installed
-
-# whether to include revision autogenerate migrations
-compare_type = true
-compare_server_default = true
-
-# Additional columns to check (if needed)
-# compare_check_constraints = true
-
 [post_write_hooks]
 # post_write_hooks defines scripts or Python functions that are run
 # on newly generated revision scripts.  See the documentation for further

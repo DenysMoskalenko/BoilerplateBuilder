@@ -8,9 +8,9 @@ from app.core.config import get_settings
 from app.core.logging import build_logging_config, configure_logging
 {%- if cookiecutter.project_type != "fastapi_slim" %}
 from app.core.exception_handlers import include_exception_handlers
+from app.core.lifespan import lifespan
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
-from app.core.lifespan import lifespan
 from app.infrastructure.db.models import load_all_models
 {%- endif %}
 {%- if cookiecutter.use_otel_observability == "yes" %}
@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
         title=settings.PROJECT_NAME,
         version=settings.PROJECT_VERSION,
         max_body_size=1 * 1024 * 1024,
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
+{%- if cookiecutter.project_type != "fastapi_slim" %}
         lifespan=lifespan,
 {%- endif %}
     )
@@ -53,6 +53,7 @@ if __name__ == '__main__':
     uvicorn.run(
         'app.main:create_app',
         factory=True,
+        # Fixed for the container: it must answer on the container's own address; map another port outside it.
         host='0.0.0.0',  # noqa: S104
         port=8000,
         root_path=_settings.ROOT_PATH,
