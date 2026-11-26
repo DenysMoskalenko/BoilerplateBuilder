@@ -36,12 +36,10 @@ async def startup(settings: Settings) -> None:
     if settings.MIGRATION_ON_STARTUP:
         alembic_config = get_alembic_config()
         await asyncio.to_thread(upgrade, alembic_config, 'head')
-{%- endif %}
-    # FastAPI resolves sync dependencies in threads, where concurrent first requests would each build a client.
-{%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
     async_session_factory()
 {%- endif %}
 {%- if cookiecutter.project_type in ["fastapi_agent", "fastapi_db_agent"] %}
+    # FastAPI resolves sync dependencies in threads, where concurrent first requests would each build a client.
     # By keyword, as FastAPI calls a dependency: lru_cache keys a positional call apart, as another client.
     get_bedrock_client(settings=settings)
     get_openai_client(settings=settings)

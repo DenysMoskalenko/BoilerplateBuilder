@@ -25,7 +25,7 @@ from app.core.config import get_settings, Settings
 import app.core.observability.tracing.bootstrap as tracing_bootstrap
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
 from app.domains.health_checks.service import check_database_status
-from app.infrastructure.db.database import async_session_factory, close_database, open_db_session
+from app.infrastructure.db.database import close_database, open_db_session
 {%- endif %}
 from tests.unit.core.observability.mocks import SpanExporterSpy, TracingBootstrapSpy
 
@@ -87,7 +87,7 @@ async def test_setup_traces_queries_and_marks_log_records(monkeypatch: MonkeyPat
 {%- if cookiecutter.project_type in ["fastapi_db", "fastapi_db_agent"] %}
         async with open_db_session() as session:
             await session.execute(text('SELECT 1'))
-        await check_database_status(async_session_factory(), timeout_seconds=5)
+            await check_database_status(session, timeout_seconds=5)
 {%- endif %}
         with trace.get_tracer(__name__).start_as_current_span('logged') as span:
             record = logging.getLogRecordFactory()(__name__, logging.INFO, __file__, 0, 'Inside a span', None, None)
